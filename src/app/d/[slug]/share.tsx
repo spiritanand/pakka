@@ -8,8 +8,10 @@ export async function siteOrigin() {
   return `${proto}://${host}`;
 }
 
-export function whatsappHref(url: string, title: string) {
-  const text = `Here's the Pakka link for ${title}. You pay up front and Razorpay holds the money until the work is delivered.\n${url}`;
+export function whatsappHref(url: string, title: string, fromClient = false) {
+  const text = fromClient
+    ? `Here's the Pakka link for ${title}. Accept it and I pay up front. Razorpay holds the money until you deliver.\n${url}`
+    : `Here's the Pakka link for ${title}. You pay up front and Razorpay holds the money until the work is delivered.\n${url}`;
   return `https://wa.me/?text=${encodeURIComponent(text)}`;
 }
 

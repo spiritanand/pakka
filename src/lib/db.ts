@@ -11,8 +11,9 @@ create table if not exists deals (
   id text primary key,
   slug text unique not null,
   title text not null,
-  freelancer_id text not null,
+  freelancer_id text,
   client_id text,
+  created_by text,
   created_at integer not null
 );
 create table if not exists milestones (
@@ -55,12 +56,30 @@ create table if not exists vouches (
 );
 `);
 
+const dealCols = db.prepare(`pragma table_info(deals)`).all() as { name: string; notnull: number }[];
+if (dealCols.some((c) => c.name === "freelancer_id" && c.notnull)) {
+  db.transaction(() => {
+    db.exec(`
+      create table deals_next (
+        id text primary key, slug text unique not null, title text not null,
+        freelancer_id text, client_id text, created_by text, created_at integer not null
+      );
+      insert into deals_next (id, slug, title, freelancer_id, client_id, created_by, created_at)
+        select id, slug, title, freelancer_id, client_id, freelancer_id, created_at from deals;
+      drop table deals;
+      alter table deals_next rename to deals;
+    `);
+  })();
+} else if (!dealCols.some((c) => c.name === "created_by")) {
+  db.exec(`alter table deals add column created_by text; update deals set created_by = freelancer_id;`);
+}
+
 if (!(db.prepare(`pragma table_info(milestones)`).all() as { name: string }[]).some((c) => c.name === "funder_id")) {
   db.exec(`alter table milestones add column funder_id text`);
 }
 
 export type Deal = {
-  id: string; slug: string; title: string; freelancer_id: string; client_id: string | null; created_at: number;
+  id: string; slug: string; title: string; freelancer_id: string | null; client_id: string | null; created_by: string; created_at: number;
 };
 export type Milestone = {
   id: string; deal_id: string; idx: number; title: string; amount: number; checklist: string;

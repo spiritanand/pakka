@@ -26,15 +26,16 @@ function claim(id: string, from: string, to: string, extra = "") {
   return db.prepare(`update milestones set state = ? ${extra} where id = ? and state = ?`).run(to, id, from).changes === 1;
 }
 
-export function createDeal(p: {
-  freelancerId: string;
-  title: string;
-  milestones: { title: string; amount: number; checklist: string[]; dueDays: number }[];
-}) {
+type Terms = { title: string; milestones: { title: string; amount: number; checklist: string[]; dueDays: number }[] };
+
+export const createdByClient = (deal: Pick<Deal, "created_by" | "client_id">) => !!deal.client_id && deal.created_by === deal.client_id;
+
+export function createDeal(p: Terms & ({ freelancerId: string; clientId?: never } | { clientId: string; freelancerId?: never })) {
   const id = nanoid();
   const slug = nanoid(8);
-  db.prepare(`insert into deals (id, slug, title, freelancer_id, created_at) values (?, ?, ?, ?, ?)`).run(
-    id, slug, p.title, p.freelancerId, Date.now(),
+  const creator = p.freelancerId ?? p.clientId;
+  db.prepare(`insert into deals (id, slug, title, freelancer_id, client_id, created_by, created_at) values (?, ?, ?, ?, ?, ?, ?)`).run(
+    id, slug, p.title, p.freelancerId ?? null, p.clientId ?? null, creator, Date.now(),
   );
   p.milestones.forEach((m, idx) =>
     db.prepare(
@@ -45,24 +46,19 @@ export function createDeal(p: {
 }
 
 export function isEditable(dealId: string) {
-  const deal = db.prepare(`select client_id from deals where id = ?`).get(dealId) as { client_id: string | null } | undefined;
-  if (!deal || deal.client_id) return false;
+  const deal = db.prepare(`select * from deals where id = ?`).get(dealId) as Deal | undefined;
+  if (!deal || (createdByClient(deal) ? deal.freelancer_id : deal.client_id)) return false;
   const busy = db
     .prepare(`select count(*) n from milestones where deal_id = ? and (state != 'AGREED' or link_id is not null or funder_id is not null)`)
     .get(dealId) as { n: number };
   return busy.n === 0;
 }
 
-export function updateDeal(p: {
-  slug: string;
-  freelancerId: string;
-  title: string;
-  milestones: { title: string; amount: number; checklist: string[]; dueDays: number }[];
-}) {
+export function updateDeal(p: Terms & { slug: string; userId: string }) {
   const deal = getDealBySlug(p.slug);
-  if (!deal || deal.freelancer_id !== p.freelancerId) throw new Error("Only the freelancer can edit this deal");
+  if (!deal || deal.created_by !== p.userId) throw new Error("Only the person who made this deal can edit it");
   db.transaction(() => {
-    if (!isEditable(deal.id)) throw new Error("This deal can't be edited once a client starts funding it");
+    if (!isEditable(deal.id)) throw new Error("This deal can't be edited once the other side has joined");
     db.prepare(`update deals set title = ? where id = ?`).run(p.title, deal.id);
     db.prepare(`delete from milestones where deal_id = ?`).run(deal.id);
     p.milestones.forEach((m, idx) =>
@@ -74,10 +70,30 @@ export function updateDeal(p: {
   return deal.slug;
 }
 
+export function termsKey(dealId: string) {
+  return getMilestones(dealId).map((m) => m.id).join(".");
+}
+
+export type JoinResult = "ok" | "own" | "changed" | "taken";
+
+export function joinDeal(slug: string, userId: string, terms: string): JoinResult {
+  const deal = getDealBySlug(slug);
+  if (!deal) return "taken";
+  if (deal.freelancer_id === userId) return "ok";
+  if (deal.client_id === userId) return "own";
+  if (deal.freelancer_id || !createdByClient(deal)) return "taken";
+  return db.transaction((): JoinResult => {
+    if (termsKey(deal.id) !== terms) return "changed";
+    const n = db.prepare(`update deals set freelancer_id = ? where id = ? and freelancer_id is null and client_id != ?`).run(userId, deal.id, userId).changes;
+    return n ? "ok" : "taken";
+  })();
+}
+
 export async function startFunding(milestoneId: string, clientId: string, appUrl: string) {
   const m = getMilestone(milestoneId);
   if (!m || m.state !== "AGREED") throw new Error("Milestone is not awaiting funding");
   const deal = dealOf(m);
+  if (createdByClient(deal) && !deal.freelancer_id) throw new Error("A freelancer has to accept this deal before it can be funded");
   if (deal.freelancer_id === clientId) throw new Error("You can't fund your own deal");
   if (deal.client_id && deal.client_id !== clientId) throw new Error("Another client owns this deal");
   if (m.link_id) {
@@ -156,8 +172,9 @@ export function submitWork(milestoneId: string, userId: string, url: string, tic
 
 function affected(deal: Deal) {
   const people = new Map<string, string>();
-  people.set(deal.freelancer_id, "freelancer");
   if (deal.client_id) people.set(deal.client_id, "client");
+  if (!deal.freelancer_id) return people;
+  people.set(deal.freelancer_id, "freelancer");
   const vouchers = db.prepare(`select voucher_id from vouches where vouchee_id = ?`).all(deal.freelancer_id) as { voucher_id: string }[];
   const nameOf = (id: string) => (db.prepare(`select name from user where id = ?`).get(id) as { name: string }).name.split(" (")[0];
   const freelancerName = nameOf(deal.freelancer_id);
@@ -188,8 +205,14 @@ export function scoreChanges(milestoneId: string) {
     .all(milestoneId) as (ScoreChange & { name: string })[];
 }
 
+function parties(deal: Deal) {
+  if (!deal.freelancer_id || !deal.client_id) throw new Error("This deal is missing a freelancer or a client");
+  return { freelancer: deal.freelancer_id, client: deal.client_id };
+}
+
 async function settleRelease(m: Milestone, auto: boolean) {
   const deal = dealOf(m);
+  const p = parties(deal);
   if (!claim(m.id, "SUBMITTED", "RELEASING")) return;
   try {
     await rzp.release(m.transfer_id!);
@@ -199,13 +222,14 @@ async function settleRelease(m: Milestone, auto: boolean) {
   }
   const record = snapshot(deal);
   db.prepare(`update milestones set state = 'RELEASED', outcome = ? where id = ?`).run(auto ? "auto_released" : "accepted", m.id);
-  logEvent({ user_id: deal.freelancer_id, type: "DELIVERED", amount: m.amount, counterparty_id: deal.client_id, milestone_id: m.id, ref: m.transfer_id });
-  logEvent({ user_id: deal.client_id!, type: auto ? "AUTO_RELEASED" : "ACCEPTED", amount: m.amount, counterparty_id: deal.freelancer_id, milestone_id: m.id, ref: m.transfer_id });
+  logEvent({ user_id: p.freelancer, type: "DELIVERED", amount: m.amount, counterparty_id: p.client, milestone_id: m.id, ref: m.transfer_id });
+  logEvent({ user_id: p.client, type: auto ? "AUTO_RELEASED" : "ACCEPTED", amount: m.amount, counterparty_id: p.freelancer, milestone_id: m.id, ref: m.transfer_id });
   record(m.id);
 }
 
 async function settleGhost(m: Milestone) {
   const deal = dealOf(m);
+  const p = parties(deal);
   if (!claim(m.id, "FUNDED", "REFUNDING")) return;
   let refundId: string;
   try {
@@ -216,8 +240,8 @@ async function settleGhost(m: Milestone) {
   }
   const record = snapshot(deal);
   db.prepare(`update milestones set state = 'REFUNDED', outcome = 'ghosted', refund_id = ? where id = ?`).run(refundId, m.id);
-  logEvent({ user_id: deal.freelancer_id, type: "GHOSTED", amount: m.amount, counterparty_id: deal.client_id, milestone_id: m.id, ref: refundId });
-  logEvent({ user_id: deal.client_id!, type: "REFUNDED", amount: m.amount, counterparty_id: deal.freelancer_id, milestone_id: m.id, ref: refundId });
+  logEvent({ user_id: p.freelancer, type: "GHOSTED", amount: m.amount, counterparty_id: p.client, milestone_id: m.id, ref: refundId });
+  logEvent({ user_id: p.client, type: "REFUNDED", amount: m.amount, counterparty_id: p.freelancer, milestone_id: m.id, ref: refundId });
   record(m.id);
 }
 

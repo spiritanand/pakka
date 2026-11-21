@@ -92,7 +92,9 @@ function parseDealForm(form: FormData, back: string) {
 export async function createDeal(form: FormData) {
   const u = await me();
   const { title, milestones } = parseDealForm(form, "/new");
-  const slug = deals.createDeal({ freelancerId: u.id, title, milestones });
+  const slug = form.get("role") === "client"
+    ? deals.createDeal({ clientId: u.id, title, milestones })
+    : deals.createDeal({ freelancerId: u.id, title, milestones });
   redirect(`/d/${slug}`);
 }
 
@@ -101,12 +103,20 @@ export async function updateDeal(form: FormData) {
   const slug = String(form.get("slug") ?? "");
   const { title, milestones } = parseDealForm(form, `/d/${slug}/edit`);
   try {
-    deals.updateDeal({ slug, freelancerId: u.id, title, milestones });
+    deals.updateDeal({ slug, userId: u.id, title, milestones });
   } catch {
     redirect(`/d/${slug}/edit?error=locked`);
   }
   revalidatePath(`/d/${slug}`);
   redirect(`/d/${slug}`);
+}
+
+export async function joinDeal(form: FormData) {
+  const u = await me();
+  const slug = String(form.get("slug") ?? "");
+  const result = deals.joinDeal(slug, u.id, String(form.get("terms") ?? ""));
+  revalidatePath(`/d/${slug}`);
+  redirect(result === "ok" ? `/d/${slug}` : `/d/${slug}?join=${result}`);
 }
 
 export async function fund(form: FormData) {

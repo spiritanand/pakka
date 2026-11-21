@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@custom-variant paying {
+  &:where([data-role="client"] *, :has(input[name="role"][value="client"]:checked) *) {
+    @slot;
+  }
+}
+
 @theme inline {
   --font-sans: var(--font-plex-sans);
   --font-mono: var(--font-plex-mono);

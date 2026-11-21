@@ -125,5 +125,16 @@ export async function POST(req: Request) {
     { title: "40 product photos", amount: 12000, state: "DISPUTED", round: 3, rejected: [1], checklist: ["40 images, white background", "Consistent shadows across set"] },
   ]);
 
+  const menu = createDeal({
+    clientId: ids.Kavya,
+    title: "Menu photos for Kavya's bakery",
+    milestones: [
+      { title: "Menu shoot", amount: 8000, dueDays: 5, checklist: ["12 dishes on a plain background", "Edited JPGs at full size", "Square crops for Instagram"] },
+    ],
+  });
+  // Older than the bakery deal so Kavya's review stays at the top of her dashboard.
+  db.prepare(`update deals set created_at = created_at - ? where slug = ?`).run(7 * DAY, menu);
+  db.prepare(`update milestones set due_at = due_at - ? where deal_id = (select id from deals where slug = ?)`).run(7 * DAY, menu);
+
   return NextResponse.json({ ok: true, deal: `/d/${slug}`, logins: PEOPLE.map((p) => `${p.key}@pakka.demo`), password: DEMO_PASSWORD });
 }

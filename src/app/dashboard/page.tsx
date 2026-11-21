@@ -6,7 +6,7 @@ import { CopyButton } from "@/components/copy-button";
 import { Tip, siteOrigin, whatsappHref } from "../d/[slug]/share";
 import { currentUser } from "@/lib/auth";
 import { db, type Deal } from "@/lib/db";
-import { getMilestones } from "@/lib/deals";
+import { createdByClient, getMilestones } from "@/lib/deals";
 import { ScoreChip } from "../score-chip";
 import { SeedButton } from "../seed-button";
 import { day, firstName, inr } from "../format";
@@ -26,21 +26,29 @@ const SHORT: Record<string, string> = {
 };
 const ORDER = Object.keys(SHORT);
 
-type Row = Deal & { total: number; states: string; freelancer_name?: string; client_name?: string | null };
+type Row = Deal & { total: number; states: string; freelancer_name?: string | null; client_name?: string | null };
 type Action = { text: string; tone: string };
 
 function actionFor(d: Row, userId: string): Action | null {
   const ms = getMilestones(d.id);
+  const nothingFunded = ms.every((m) => m.state === "AGREED");
   if (d.client_id === userId) {
     const review = ms.find((m) => m.state === "SUBMITTED" && m.review_due_at);
     if (review) return { text: `Review · ${Math.max(0, Math.ceil((review.review_due_at! - Date.now()) / 3_600_000))}h left`, tone: "chip-amber" };
+    if (createdByClient(d) && nothingFunded) return d.freelancer_id ? { text: "Fund milestone 1", tone: "chip-emerald" } : { text: "Send the link", tone: "chip-zinc" };
   }
   if (d.freelancer_id === userId) {
     const held = ms.find((m) => m.state === "FUNDED");
     if (held) return { text: `Deliver by ${day(held.due_at)}`, tone: "chip-emerald" };
-    if (ms.every((m) => m.state === "AGREED")) return { text: "Send the link", tone: "chip-zinc" };
+    if (nothingFunded && !createdByClient(d)) return { text: "Send the link", tone: "chip-zinc" };
   }
   return null;
+}
+
+function roleOf(d: Row, userId: string) {
+  if (d.freelancer_id === userId) return d.client_name ? `For ${firstName(d.client_name)}` : "No client yet";
+  if (!d.freelancer_name) return "Waiting for a freelancer";
+  return `${createdByClient(d) ? "With" : "From"} ${firstName(d.freelancer_name)}`;
 }
 
 function summary(states: string) {
@@ -52,7 +60,7 @@ function summary(states: string) {
 }
 
 const withMilestones = `select d.*, sum(m.amount) as total, group_concat(m.state) as states, f.name as freelancer_name, c.name as client_name
-  from deals d join milestones m on m.deal_id = d.id join user f on f.id = d.freelancer_id left join user c on c.id = d.client_id`;
+  from deals d join milestones m on m.deal_id = d.id left join user f on f.id = d.freelancer_id left join user c on c.id = d.client_id`;
 
 export default async function Dashboard() {
   const u = await currentUser();
@@ -84,7 +92,7 @@ export default async function Dashboard() {
         <section className="section">
           <ListHead title="Your deals" count={deals.length} />
           {deals.length ? (
-            <DealList origin={origin} deals={deals} role={(d) => (d.freelancer_id === u.id ? (d.client_name ? `For ${firstName(d.client_name)}` : "No client yet") : `From ${firstName(d.freelancer_name ?? "")}`)} action={(d) => actions.get(d.id) ?? null} />
+            <DealList origin={origin} viewer={u.id} deals={deals} role={(d) => roleOf(d, u.id)} action={(d) => actions.get(d.id) ?? null} />
           ) : (
             <p className="mt-4 max-w-md text-ink-2">
               No deals yet. Create one and send the link to your client on WhatsApp.
@@ -98,6 +106,7 @@ export default async function Dashboard() {
           <ListHead title={waiting ? "Waiting for you" : "Demo deals you can fund"} count={open.length} />
           <DealList
             origin={origin}
+            viewer={u.id}
             deals={open}
             role={() => "Open to fund"}
             meta={(d) => {
@@ -126,8 +135,8 @@ function ListHead({ title, count }: { title: string; count: number }) {
 
 const ACTION = "grid size-8 place-items-center rounded-md text-muted transition-colors hover:bg-paper hover:text-ink";
 
-function DealList({ deals, role, meta, action, origin }: {
-  deals: Row[]; role: (d: Row) => string; meta?: (d: Row) => string; action?: (d: Row) => Action | null; origin: string;
+function DealList({ deals, role, meta, action, origin, viewer }: {
+  deals: Row[]; role: (d: Row) => string; meta?: (d: Row) => string; action?: (d: Row) => Action | null; origin: string; viewer: string;
 }) {
   return (
     <ul className="mt-4 border-t border-line">
@@ -152,7 +161,7 @@ function DealList({ deals, role, meta, action, origin }: {
                     <CopyButton value={`/d/${d.slug}`} href variant="icon" label="Copy link" className="hover:bg-paper!" />
                   </Tip>
                   <Tip label="Share on WhatsApp">
-                    <a href={whatsappHref(`${origin}/d/${d.slug}`, d.title)} target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp" className={ACTION}>
+                    <a href={whatsappHref(`${origin}/d/${d.slug}`, d.title, d.client_id === viewer)} target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp" className={ACTION}>
                       <MessageCircle size={16} strokeWidth={1.75} aria-hidden />
                     </a>
                   </Tip>

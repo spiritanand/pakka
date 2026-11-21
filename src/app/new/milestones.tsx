@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { spring, useAnimateIn } from "@/components/motion";
 import { SubmitButton } from "@/components/submit-button";
 import { NOT_BLANK } from "../format";
+import { ByRole } from "./by-role";
 
 const MAX = 4;
 
@@ -71,14 +72,21 @@ export function MilestoneFields({ initial, submitLabel = "Create Pakka link", bu
                 <label className="block space-y-1.5">
                   <span className="label block">Days to deliver</span>
                   <input className="input tabular-nums" name="m_due" type="number" min="1" defaultValue={row.due ?? (i ? 14 : 7)} />
-                  {i ? null : <span className="block text-meta text-muted">Counted from the day your client pays</span>}
+                  {i ? null : (
+                    <span className="block text-meta text-muted">
+                      <ByRole work="Counted from the day your client pays" pay="Counted from the day you pay" />
+                    </span>
+                  )}
                 </label>
               </div>
               <label className="block space-y-1.5">
                 <span className="label block">Delivered means</span>
                 <textarea className="input min-h-28 leading-relaxed" name="m_checklist" defaultValue={row.checklist} placeholder={PLACEHOLDER[i].checklist} required={required} />
                 {i ? null : (
-                  <span className="block text-meta text-muted">One item per line. Your client ticks what's missing if they send it back.</span>
+                  <span className="block text-meta text-muted">
+                    One item per line.{" "}
+                    <ByRole work="Your client ticks what's missing if they send it back." pay="You tick what's missing if you send it back." />
+                  </span>
                 )}
               </label>
             </div>
@@ -96,7 +104,9 @@ export function MilestoneFields({ initial, submitLabel = "Create Pakka link", bu
       ) : null}
 
       <section className="section flex flex-wrap items-center justify-between gap-4">
-        <p className="text-meta text-muted">Your client pays nothing until they fund a milestone.</p>
+        <p className="text-meta text-muted">
+          <ByRole work="Your client pays nothing until they fund a milestone." pay="You pay nothing until a freelancer accepts and you fund a milestone." />
+        </p>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
           <p aria-live="polite" className="text-sm text-ink-2 tabular-nums">
             {total ? (

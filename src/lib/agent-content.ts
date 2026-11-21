@@ -25,7 +25,7 @@ Status: demo on Razorpay test mode. No real money moves.
 
 ## How it works
 
-1. **Agree what done means.** The freelancer creates a Pakka link with milestones, a price, a deadline and a short checklist per milestone.
+1. **Agree what done means.** The freelancer creates a Pakka link with milestones, a price, a deadline and a short checklist per milestone. The client can create it too; then the freelancer accepts it before anything is paid.
 2. **The client pays up front.** Payment goes through Razorpay and is held as a Razorpay Route transfer on hold. The freelancer starts when the deal says "Held by Razorpay".
 3. **Deliver and get paid.** The freelancer submits the work and ticks every checklist item. The client accepts, or ticks what's missing (one revision round). If the client stays silent for 72 hours, the money is paid out automatically.
 4. **Missed deadline.** If nothing is delivered by the deadline, the hold is reversed and the client is refunded in full.

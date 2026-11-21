@@ -7,7 +7,7 @@ import { SeedButton } from "../seed-button";
 import { SubmitButton } from "@/components/submit-button";
 import { firstName, safeNext } from "../format";
 import { getUser } from "@/lib/db";
-import { getDealBySlug } from "@/lib/deals";
+import { createdByClient, getDealBySlug } from "@/lib/deals";
 import { BackLink } from "@/components/back-link";
 
 const PERSONAS = [
@@ -29,11 +29,17 @@ export async function generateMetadata({ searchParams }: PageProps<"/login">): P
   return { title: (await searchParams).mode === "signin" ? "Sign in" : "Create an account" };
 }
 
-function payerDeal(next: string) {
+function dealFor(next: string) {
   if (!next.startsWith("/d/")) return null;
   const deal = getDealBySlug(next.slice(3).split(/[/?#]/)[0]);
   if (!deal) return null;
-  return { title: deal.title, freelancer: firstName(getUser(deal.freelancer_id)?.name ?? "the freelancer") };
+  const nameOf = (id: string | null, fallback: string) => firstName((id && getUser(id)?.name) || fallback);
+  return {
+    title: deal.title,
+    joining: createdByClient(deal) && !deal.freelancer_id,
+    freelancer: nameOf(deal.freelancer_id, "the freelancer"),
+    client: nameOf(deal.client_id, "The client"),
+  };
 }
 
 export default async function Login({ searchParams }: PageProps<"/login">) {
@@ -43,18 +49,22 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
   const mode = sp.mode === "signin" ? "signin" : "signup";
   const href = (m: string) => `/login?mode=${m}${sp.next ? `&next=${encodeURIComponent(next)}` : ""}`;
   if (await currentUser()) redirect(next);
-  const payer = payerDeal(next);
+  const target = dealFor(next);
+  const payer = target && !target.joining ? target : null;
+  const joiner = target?.joining ? target : null;
   return (
     <div className="grid gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-0">
       <section className="lg:pt-2 lg:pr-14">
-        {payer ? <div className="pb-6"><BackLink href={next} label="Back to the deal" /></div> : null}
+        {target ? <div className="pb-6"><BackLink href={next} label="Back to the deal" /></div> : null}
         <h1 className="text-title">
-          {payer ? `Fund ${payer.title}` : "The money waits until the work is done."}
+          {payer ? `Fund ${payer.title}` : joiner ? `Accept ${joiner.title}` : "The money waits until the work is done."}
         </h1>
         <p className="mt-3 max-w-lg text-ink-2">
           {payer
             ? `Your money goes to Razorpay, not to ${payer.freelancer}. Create an account so the refund knows where to go.`
-            : "Your client pays up front. Razorpay holds it until you deliver."}
+            : joiner
+              ? `${joiner.client} pays up front once you accept. Razorpay holds the money until you deliver.`
+              : "Your client pays up front. Razorpay holds it until you deliver."}
         </p>
         <div className="mt-8">
           <h2 className="text-sm font-medium text-ink">Or try the demo</h2>

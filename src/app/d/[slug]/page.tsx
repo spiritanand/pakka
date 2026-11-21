@@ -3,9 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { db, getUser, type EventRow, type Milestone } from "@/lib/db";
-import { getDealBySlug, getMilestones, scoreChanges, isEditable } from "@/lib/deals";
+import { canFastForward, createdByClient, getDealBySlug, getMilestones, isEditable, scoreChanges, termsKey } from "@/lib/deals";
 import { ScoreChip, StableNumber, profileHref } from "../../score-chip";
-import { accept, fastForward, fund, submit } from "../../actions";
+import { accept, fastForward, fund, joinDeal, submit } from "../../actions";
 import { ArrowDown, ArrowRight, ArrowUp, Check, ExternalLink, MessageCircle, Pencil, X } from "lucide-react";
 import { CopyButton } from "@/components/copy-button";
 import { BackLink } from "@/components/back-link";
@@ -50,6 +50,12 @@ const AGREED_NOTE: Record<Viewer, (n: Names, amount: number) => string> = {
   client: (n, a) => `Razorpay holds your ${inr(a)} until ${n.freelancer} delivers. Miss the deadline and it comes back to you.`,
   freelancer: () => "Start once this says Held by Razorpay.",
   other: () => STATE.AGREED.note,
+};
+
+const JOIN_ERROR: Record<string, string> = {
+  changed: "The terms changed while you were reading. Check them again, then accept.",
+  taken: "Another freelancer has already accepted this deal.",
+  own: "This is your deal. Send the link to the freelancer you want to hire.",
 };
 
 const SENT_BACK = "Sent back. Fix the items in red and deliver again within 48 hours.";
@@ -101,23 +107,30 @@ export async function generateMetadata({ params }: PageProps<"/d/[slug]">): Prom
   const deal = getDealBySlug(slug);
   if (!deal) notFound();
   const total = getMilestones(deal.id).reduce((s, m) => s + m.amount, 0);
-  const freelancer = first(getUser(deal.freelancer_id)?.name ?? "A freelancer");
   const title = `${deal.title} · ${inr(total)} · Pakka`;
-  const description = `${freelancer} sent you a Pakka link. Pay up front, Razorpay holds it until the work is delivered.`;
+  const description = createdByClient(deal)
+    ? `${first(getUser(deal.created_by)?.name ?? "A client")} sent you a Pakka link. Accept it and they pay up front. Razorpay holds the money until you deliver.`
+    : `${first((deal.freelancer_id && getUser(deal.freelancer_id)?.name) || "A freelancer")} sent you a Pakka link. Pay up front, Razorpay holds it until the work is delivered.`;
   return { title: { absolute: title }, description, openGraph: { title, description, url: `/d/${slug}` } };
 }
 
 export default async function DealPage({ params, searchParams }: PageProps<"/d/[slug]">) {
   const { slug } = await params;
-  const fundingPending = (await searchParams).funding === "pending";
+  const sp = await searchParams;
+  const fundingPending = sp.funding === "pending";
+  const joinError = typeof sp.join === "string" ? JOIN_ERROR[sp.join] : undefined;
   const deal = getDealBySlug(slug);
   if (!deal) notFound();
   const me = await currentUser();
   const milestones = getMilestones(deal.id);
-  const freelancer = getUser(deal.freelancer_id)!;
+  const freelancer = deal.freelancer_id ? getUser(deal.freelancer_id) : null;
   const client = deal.client_id ? getUser(deal.client_id) : null;
-  const isFreelancer = me?.id === deal.freelancer_id;
+  const paying = createdByClient(deal);
+  const awaiting = paying && !freelancer;
+  const isFreelancer = !!me && me.id === deal.freelancer_id;
   const isClient = !!me && !isFreelancer && (!deal.client_id || deal.client_id === me.id);
+  const isCreator = !!me && me.id === deal.created_by;
+  const canJoin = awaiting && !isClient;
   const events = db
     .prepare(
       `select e.*, u.name from events e join user u on u.id = e.user_id
@@ -126,7 +139,7 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
     .all(deal.id) as (EventRow & { name: string })[];
   const total = milestones.reduce((s, m) => s + m.amount, 0);
   const viewer: Viewer = isFreelancer ? "freelancer" : isClient ? "client" : "other";
-  const names: Names = { freelancer: first(freelancer.name), client: client ? first(client.name) : "The client" };
+  const names: Names = { freelancer: freelancer ? first(freelancer.name) : "the freelancer", client: client ? first(client.name) : "The client" };
   const nextToFund = milestones.find((m) => m.state === "AGREED")?.id;
   const dealUrl = `${await siteOrigin()}/d/${slug}`;
   const here = `/d/${slug}`;
@@ -139,24 +152,27 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
   const toFund = milestones.find((m) => m.id === nextToFund);
   const nothingFunded = milestones.every((m) => m.state === "AGREED");
   let next: { text: string; href?: string } | null = null;
-  if (isFreelancer) {
+  if (awaiting) {
+    if (isClient) next = { text: "Waiting for the freelancer to accept" };
+  } else if (isFreelancer) {
     if (held) next = { text: `Deliver ${held.title} by ${day(held.due_at)}`, href: anchor(held) };
     else if (inReview) next = { text: `${inReview.title} is with ${names.client} for review`, href: anchor(inReview) };
-    else if (nothingFunded) next = { text: "Next: send this link to your client." };
-  } else if (isClient || !me) {
+    else if (nothingFunded) next = { text: paying ? `Next: ${names.client} funds milestone 1.` : "Next: send this link to your client." };
+  } else if (isClient || (!me && !paying)) {
     if (isClient && inReview?.review_due_at)
       next = { text: `${inReview.title} is waiting for your review · ${hoursUntil(inReview.review_due_at)}h left`, href: anchor(inReview) };
     else if (toFund) next = { text: `Next: fund milestone ${toFund.idx + 1}, ${inr(toFund.amount)}`, href: anchor(toFund) };
   }
-  const shareInline = isFreelancer && nothingFunded;
+  const shareInline = (isFreelancer && !paying && nothingFunded) || (isClient && awaiting);
+  const forward = canFastForward(deal);
   const shareTools = (
     <div className="flex flex-wrap items-center gap-2">
       <CopyButton value={here} href label="Copy Pakka link" size="md" />
-      <a href={whatsappHref(dealUrl, deal.title)} target="_blank" rel="noopener noreferrer" className="btn-ghost">
+      <a href={whatsappHref(dealUrl, deal.title, isClient)} target="_blank" rel="noopener noreferrer" className="btn-ghost">
         <MessageCircle size={16} strokeWidth={1.75} aria-hidden />
         Share on WhatsApp
       </a>
-      {isFreelancer && isEditable(deal.id) ? (
+      {isCreator && isEditable(deal.id) ? (
         <Link href={`/d/${slug}/edit`} className="btn-ghost">
           <Pencil size={16} strokeWidth={1.75} aria-hidden />
           Edit deal
@@ -188,8 +204,25 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
               {shareInline ? shareTools : null}
             </div>
           ) : null}
+          {canJoin ? (
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+              {me ? (
+                <form action={joinDeal}>
+                  <input type="hidden" name="slug" value={slug} />
+                  <input type="hidden" name="terms" value={termsKey(deal.id)} />
+                  <SubmitButton className="btn" busy="Accepting…">Accept and start</SubmitButton>
+                </form>
+              ) : (
+                <Link href={`/login?next=${here}`} className="btn">Sign in to accept</Link>
+              )}
+              <p className="max-w-md text-sm text-ink-2">
+                {names.client} pays up front once you accept. Razorpay holds the money until you deliver against the checklists below.
+              </p>
+            </div>
+          ) : null}
+          {joinError ? <p role="alert" className="mt-6 border-l-2 border-rose-600 pl-3 text-sm text-rose-700">{joinError}</p> : null}
         </div>
-        {shareInline ? null : isFreelancer ? shareTools : <CopyButton value={here} href label="Copy link" />}
+        {shareInline ? null : isFreelancer || isCreator ? shareTools : <CopyButton value={here} href label="Copy link" />}
       </header>
 
       {fundingPending && nextToFund ? (
@@ -200,7 +233,14 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
 
       <section className="hairline grid sm:grid-cols-2">
         <div className="py-8 sm:pr-10">
-          <ScoreChip userId={freelancer.id} name={freelancer.name} role="Freelancer" from={here} />
+          {freelancer ? (
+            <ScoreChip userId={freelancer.id} name={freelancer.name} role="Freelancer" from={here} />
+          ) : (
+            <div>
+              <div className="label">Freelancer</div>
+              <p className="mt-1 text-ink-2">{canJoin && me ? "No freelancer yet. That's you, once you accept." : "No freelancer yet."}</p>
+            </div>
+          )}
         </div>
         <div className="flex items-center border-t border-line py-8 sm:border-t-0 sm:border-l sm:pl-10">
           {client ? (
@@ -225,6 +265,9 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
           names={names}
           fundNext={m.id === nextToFund}
           signedIn={!!me}
+          paying={paying}
+          awaiting={awaiting}
+          forward={forward}
           createdAt={deal.created_at}
           settledAt={settledAt.get(m.id)}
         />
@@ -254,8 +297,9 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
   );
 }
 
-function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn, createdAt, settledAt }: {
-  m: Milestone; slug: string; viewer: Viewer; names: Names; fundNext: boolean; signedIn: boolean; createdAt: number; settledAt?: number;
+function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn, paying, awaiting, forward, createdAt, settledAt }: {
+  m: Milestone; slug: string; viewer: Viewer; names: Names; fundNext: boolean; signedIn: boolean;
+  paying: boolean; awaiting: boolean; forward: boolean; createdAt: number; settledAt?: number;
 }) {
   const isFreelancer = viewer === "freelancer";
   const isClient = viewer === "client";
@@ -273,14 +317,17 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn, createdA
           ? AGREED_NOTE[viewer](names, m.amount)
           : isFreelancer
             ? "Your client can fund this later."
-            : "You can fund this later."
+            : paying && !isClient
+              ? `${names.client} can fund this later.`
+              : "You can fund this later."
         : s.note;
   const fundClass = fundNext ? "btn" : "btn-ghost";
-  const canFund = m.state === "AGREED" && isClient;
-  const needsSignIn = m.state === "AGREED" && !signedIn;
+  const canFund = m.state === "AGREED" && isClient && !awaiting;
+  const fundLocked = m.state === "AGREED" && isClient && awaiting;
+  const needsSignIn = m.state === "AGREED" && !signedIn && !paying;
   const canSubmit = m.state === "FUNDED" && isFreelancer;
   const canReview = m.state === "SUBMITTED" && isClient;
-  const canForward = (m.state === "FUNDED" || m.state === "SUBMITTED") && (isClient || isFreelancer);
+  const canForward = forward && (m.state === "FUNDED" || m.state === "SUBMITTED") && (isClient || isFreelancer);
   const hoursLeft = m.review_due_at ? hoursUntil(m.review_due_at) : 0;
   const daysToDeliver = Math.max(1, Math.round((m.due_at - createdAt) / DAY));
 
@@ -390,11 +437,13 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn, createdA
         </div>
       </div>
 
-      {canFund || needsSignIn || canReview || canForward ? (
+      {canFund || fundLocked || needsSignIn || canReview || canForward ? (
         <div className="mt-8 space-y-6 border-t border-line pt-6 sm:ml-10">
-          {canFund || needsSignIn ? (
+          {canFund || fundLocked || needsSignIn ? (
             <div>
-              {canFund ? (
+              {fundLocked ? (
+                <button type="button" className={fundClass} disabled>Fund after a freelancer accepts</button>
+              ) : canFund ? (
                 <form action={fund}>
                   <input type="hidden" name="m" value={m.id} />
                   <SubmitButton className={fundClass} busy={`Fund ${inr(m.amount)} · opening Razorpay…`}>Fund {inr(m.amount)} · held until delivered</SubmitButton>
