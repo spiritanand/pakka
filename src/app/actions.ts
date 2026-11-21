@@ -67,10 +67,9 @@ export async function signOut() {
   redirect("/");
 }
 
-export async function createDeal(form: FormData) {
-  const u = await me();
+function parseDealForm(form: FormData, back: string) {
   const title = String(form.get("title") ?? "").trim();
-  if (!title) redirect("/new?error=title");
+  if (!title) redirect(`${back}?error=title`);
   const titles = form.getAll("m_title").map(String);
   const amounts = form.getAll("m_amount").map(String);
   const checklists = form.getAll("m_checklist").map(String);
@@ -84,10 +83,29 @@ export async function createDeal(form: FormData) {
   }));
   const complete = (m: (typeof rows)[number]) => !!m.title && m.amount > 0 && m.checklist.length > 0;
   const partial = rows.findIndex((m) => !complete(m) && (m.title || m.rawAmount || m.checklist.length));
-  if (partial >= 0) redirect(`/new?error=partial&m=${partial + 1}`);
+  if (partial >= 0) redirect(`${back}?error=partial&m=${partial + 1}`);
   const milestones = rows.filter(complete).map(({ title, amount, checklist, dueDays }) => ({ title, amount, checklist, dueDays }));
-  if (!milestones.length) redirect("/new?error=empty");
+  if (!milestones.length) redirect(`${back}?error=empty`);
+  return { title, milestones };
+}
+
+export async function createDeal(form: FormData) {
+  const u = await me();
+  const { title, milestones } = parseDealForm(form, "/new");
   const slug = deals.createDeal({ freelancerId: u.id, title, milestones });
+  redirect(`/d/${slug}`);
+}
+
+export async function updateDeal(form: FormData) {
+  const u = await me();
+  const slug = String(form.get("slug") ?? "");
+  const { title, milestones } = parseDealForm(form, `/d/${slug}/edit`);
+  try {
+    deals.updateDeal({ slug, freelancerId: u.id, title, milestones });
+  } catch {
+    redirect(`/d/${slug}/edit?error=locked`);
+  }
+  revalidatePath(`/d/${slug}`);
   redirect(`/d/${slug}`);
 }
 

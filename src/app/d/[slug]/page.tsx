@@ -3,13 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { db, getUser, type EventRow, type Milestone } from "@/lib/db";
-import { getDealBySlug, getMilestones, scoreChanges } from "@/lib/deals";
+import { getDealBySlug, getMilestones, scoreChanges, isEditable } from "@/lib/deals";
 import { ScoreChip, StableNumber, profileHref } from "../../score-chip";
 import { accept, fastForward, fund, submit } from "../../actions";
 import {
   ArrowDown, ArrowRight, ArrowUp, CalendarClock, Check, CircleAlert, CircleCheck, CircleDashed, Clock, ExternalLink, Hourglass,
-  LoaderCircle, MessageCircle, RotateCcw, ShieldCheck, Undo2, X, type LucideIcon,
-} from "lucide-react";
+  LoaderCircle, MessageCircle, RotateCcw, ShieldCheck, Undo2, X, Pencil, type LucideIcon } from "lucide-react";
 import { CopyButton } from "@/components/copy-button";
 import { BackLink } from "@/components/back-link";
 import { siteOrigin, whatsappHref } from "./share";
@@ -171,6 +170,12 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
         <MessageCircle size={16} strokeWidth={1.75} aria-hidden className="text-emerald-700" />
         Share on WhatsApp
       </a>
+      {isFreelancer && isEditable(deal.id) ? (
+        <Link href={`/d/${slug}/edit`} className="btn-ghost">
+          <Pencil size={16} strokeWidth={1.75} aria-hidden />
+          Edit deal
+        </Link>
+      ) : null}
     </>
   );
 

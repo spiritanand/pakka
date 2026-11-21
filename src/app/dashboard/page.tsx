@@ -27,7 +27,7 @@ const SHORT: Record<string, string> = {
 };
 const ORDER = Object.keys(SHORT);
 
-type Row = Deal & { total: number; states: string; freelancer_name?: string };
+type Row = Deal & { total: number; states: string; freelancer_name?: string; client_name?: string | null };
 type Action = { text: string; tone: string };
 
 function actionFor(d: Row, userId: string): Action | null {
@@ -60,8 +60,8 @@ const TONE: Record<string, string> = {
   REFUNDED: "text-rose-700",
 };
 
-const withMilestones = `select d.*, sum(m.amount) as total, group_concat(m.state) as states
-  from deals d join milestones m on m.deal_id = d.id`;
+const withMilestones = `select d.*, sum(m.amount) as total, group_concat(m.state) as states, f.name as freelancer_name, c.name as client_name
+  from deals d join milestones m on m.deal_id = d.id join user f on f.id = d.freelancer_id left join user c on c.id = d.client_id`;
 
 export default async function Dashboard() {
   const u = await currentUser();
@@ -93,7 +93,7 @@ export default async function Dashboard() {
         <section className="section">
           <ListHead title="Your deals" count={deals.length} />
           {deals.length ? (
-            <DealList origin={origin} deals={deals} role={(d) => (d.freelancer_id === u.id ? "You're the freelancer" : "You're the client")} action={(d) => actions.get(d.id) ?? null} />
+            <DealList origin={origin} deals={deals} role={(d) => (d.freelancer_id === u.id ? (d.client_name ? `For ${firstName(d.client_name)}` : "No client yet") : `From ${firstName(d.freelancer_name ?? "")}`)} action={(d) => actions.get(d.id) ?? null} />
           ) : (
             <p className="mt-6 max-w-md border-y border-line py-8 text-ink-2">
               No deals yet. Create one and send the link to your client on WhatsApp.

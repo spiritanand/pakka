@@ -16,11 +16,11 @@ const PLACEHOLDER = [
   { title: "Extras", checklist: "One item per line" },
 ];
 
-type Row = { title: string; amount: string; checklist: string };
+export type Row = { title: string; amount: string; checklist: string; due?: number };
 const EMPTY: Row = { title: "", amount: "", checklist: "" };
 
-export function MilestoneFields() {
-  const [rows, setRows] = useState<Row[]>([EMPTY, EMPTY]);
+export function MilestoneFields({ initial, submitLabel = "Create Pakka link", busyLabel = "Creating…" }: { initial?: Row[]; submitLabel?: string; busyLabel?: string } = {}) {
+  const [rows, setRows] = useState<Row[]>(initial?.length ? initial : [EMPTY, EMPTY]);
   const animateIn = useAnimateIn();
 
   const onInput = (i: number) => (e: FormEvent<HTMLElement>) => {
@@ -63,21 +63,21 @@ export function MilestoneFields() {
               <div className="grid gap-4 sm:grid-cols-[1fr_9rem_9rem]">
                 <label className="block space-y-1.5">
                   <span className="label block">Title</span>
-                  <input className="input" name="m_title" placeholder={PLACEHOLDER[i].title} pattern={NOT_BLANK} title="Add a title" required={required} />
+                  <input className="input" name="m_title" defaultValue={row.title} placeholder={PLACEHOLDER[i].title} pattern={NOT_BLANK} title="Add a title" required={required} />
                 </label>
                 <label className="block space-y-1.5">
                   <span className="label block">Amount (₹)</span>
-                  <input className="input tabular-nums" name="m_amount" type="number" min="1" placeholder="15000" required={required} />
+                  <input className="input tabular-nums" name="m_amount" type="number" min="1" defaultValue={row.amount} placeholder="15000" required={required} />
                 </label>
                 <label className="block space-y-1.5">
                   <span className="label block">Days to deliver</span>
-                  <input className="input tabular-nums" name="m_due" type="number" min="1" defaultValue={i ? 14 : 7} />
+                  <input className="input tabular-nums" name="m_due" type="number" min="1" defaultValue={row.due ?? (i ? 14 : 7)} />
                   {i ? null : <span className="block text-xs leading-snug text-muted">Counted from the day your client pays</span>}
                 </label>
               </div>
               <label className="block space-y-1.5">
                 <span className="label block">Delivered means</span>
-                <textarea className="input min-h-28 leading-relaxed" name="m_checklist" placeholder={PLACEHOLDER[i].checklist} required={required} />
+                <textarea className="input min-h-28 leading-relaxed" name="m_checklist" defaultValue={row.checklist} placeholder={PLACEHOLDER[i].checklist} required={required} />
                 {i ? null : (
                   <span className="block text-xs text-muted">One item per line. Your client ticks what's missing if they send it back.</span>
                 )}
@@ -107,7 +107,7 @@ export function MilestoneFields() {
               </>
             ) : null}
           </p>
-          <SubmitButton className="btn h-11 px-5" busy="Creating…">Create Pakka link</SubmitButton>
+          <SubmitButton className="btn h-11 px-5" busy={busyLabel}>{submitLabel}</SubmitButton>
         </div>
       </section>
     </>

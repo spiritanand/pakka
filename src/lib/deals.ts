@@ -44,6 +44,36 @@ export function createDeal(p: {
   return slug;
 }
 
+export function isEditable(dealId: string) {
+  const deal = db.prepare(`select client_id from deals where id = ?`).get(dealId) as { client_id: string | null } | undefined;
+  if (!deal || deal.client_id) return false;
+  const busy = db
+    .prepare(`select count(*) n from milestones where deal_id = ? and (state != 'AGREED' or link_id is not null or funder_id is not null)`)
+    .get(dealId) as { n: number };
+  return busy.n === 0;
+}
+
+export function updateDeal(p: {
+  slug: string;
+  freelancerId: string;
+  title: string;
+  milestones: { title: string; amount: number; checklist: string[]; dueDays: number }[];
+}) {
+  const deal = getDealBySlug(p.slug);
+  if (!deal || deal.freelancer_id !== p.freelancerId) throw new Error("Only the freelancer can edit this deal");
+  db.transaction(() => {
+    if (!isEditable(deal.id)) throw new Error("This deal can't be edited once a client starts funding it");
+    db.prepare(`update deals set title = ? where id = ?`).run(p.title, deal.id);
+    db.prepare(`delete from milestones where deal_id = ?`).run(deal.id);
+    p.milestones.forEach((m, idx) =>
+      db.prepare(
+        `insert into milestones (id, deal_id, idx, title, amount, checklist, due_at) values (?, ?, ?, ?, ?, ?, ?)`,
+      ).run(nanoid(), deal.id, idx, m.title, Math.round(m.amount * 100), JSON.stringify(m.checklist), deal.created_at + m.dueDays * 24 * HOUR),
+    );
+  })();
+  return deal.slug;
+}
+
 export async function startFunding(milestoneId: string, clientId: string, appUrl: string) {
   const m = getMilestone(milestoneId);
   if (!m || m.state !== "AGREED") throw new Error("Milestone is not awaiting funding");
