@@ -12,12 +12,6 @@ const PERSONAS = [
   ["arjun", "Arjun"],
 ];
 
-const RULES = [
-  ["Freelancer misses the deadline", "The client gets a full refund."],
-  ["Client says nothing after delivery", "The freelancer is paid after 72 hours."],
-  ["Every finished deal", "Moves both scores, and the scores of anyone who vouched for them."],
-];
-
 export default async function Login({ searchParams }: PageProps<"/login">) {
   const sp = await searchParams;
   const next = String(sp.next ?? "/dashboard");
@@ -27,28 +21,18 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
   return (
     <div className="grid gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-0">
       <section className="lg:pr-14">
-        <div className="eyebrow">For deals made on WhatsApp</div>
-        <h1 className="mt-4 text-5xl font-semibold leading-[1.02] tracking-[-0.035em] text-balance text-ink sm:text-6xl">
+        <h1 className="text-3xl font-semibold tracking-[-0.03em] text-balance text-ink sm:text-4xl">
           The money waits until the work is done.
         </h1>
-        <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-2">
-          Your client pays up front and <span className="font-medium text-ink">Razorpay holds it</span>. You're paid when you
-          deliver, and every finished deal builds a <span className="font-medium text-ink">0–1000 trust score</span>.
+        <p className="mt-4 max-w-lg text-lg leading-relaxed text-ink-2">
+          Your client pays up front. Razorpay holds it until you deliver.
         </p>
-        <dl className="mt-10 max-w-lg border-t border-line">
-          {RULES.map(([k, v]) => (
-            <div key={k} className="grid gap-1 border-b border-line py-3 text-sm sm:grid-cols-[14rem_1fr] sm:gap-4">
-              <dt className="font-medium text-ink">{k}</dt>
-              <dd className="text-ink-2">{v}</dd>
-            </div>
-          ))}
-        </dl>
-        <div className="mt-10">
+        <div className="mt-8">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-sm font-semibold text-ink">Try the demo as</h2>
             <SeedButton />
           </div>
-          <p className="mt-1 text-[13px] text-muted">One click signs you in. Use a second browser to play the other side.</p>
+          <p className="mt-1 text-[13px] text-muted">One click signs you in.</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {PERSONAS.map(([k, label]) => (
               <form key={k} action={signIn}>

@@ -48,7 +48,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <Link href="/login?mode=signin" className="rounded-md px-2.5 py-1.5 text-ink-2 transition-colors hover:bg-wash hover:text-ink">
                   Sign in
                 </Link>
-                <Link href="/login" className="btn btn-sm">Create a Pakka link</Link>
+                <Link href="/login?next=/new" className="btn btn-sm">Create a Pakka link</Link>
               </nav>
             )}
           </div>

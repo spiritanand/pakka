@@ -43,8 +43,8 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
       <header className="flex flex-wrap items-end justify-between gap-8 pb-12">
         <ScoreChip userId={u.id} name={u.name} size="lg" />
         <div className="flex flex-wrap gap-2">
-          <span className={panOk(u.pan) ? "chip-emerald" : "chip-zinc"}>{panOk(u.pan) ? "PAN ✓ format checked" : "No PAN"}</span>
-          <span className={gstinOk(u.gstin) ? "chip-emerald" : "chip-zinc"}>{gstinOk(u.gstin) ? "GSTIN ✓ checksum checked" : "No GSTIN"}</span>
+          <span className={panOk(u.pan) ? "chip-emerald" : "chip-zinc"}>{panOk(u.pan) ? "PAN checked" : "No PAN"}</span>
+          <span className={gstinOk(u.gstin) ? "chip-emerald" : "chip-zinc"}>{gstinOk(u.gstin) ? "GSTIN checked" : "No GSTIN"}</span>
         </div>
       </header>
 
@@ -66,14 +66,13 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
             </StaggerItem>
           </Stagger>
           <p className="mt-4 max-w-prose text-xs leading-relaxed text-muted">
-            Only paid outcomes count, and only 3 deals with the same person. A missed funded deadline costs 300, and each
-            person who vouched for them loses 150. A client who doesn't reply in review loses 40.
+            Only paid deals count. Missing a funded deadline costs 300.
           </p>
         </div>
 
         <div className="border-t border-line py-10 lg:border-t-0 lg:border-l lg:pl-12">
           <h2 className="text-xl font-semibold tracking-tight">Vouched for by</h2>
-          {t.vouchers.length === 0 ? <p className="mt-4 text-sm text-muted">No vouches yet.</p> : null}
+          {t.vouchers.length === 0 ? <p className="mt-4 max-w-sm text-sm text-muted">No vouches yet. A vouch from someone with a good score raises this one.</p> : null}
           <ul className="mt-6">
             {t.vouchers.map((v) => (
               <li key={v.voucher_id} className="border-t border-line py-3 text-sm">
@@ -114,8 +113,8 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
         {events.length === 0 ? <p className="mt-4 text-sm text-muted">No finished deals yet.</p> : null}
         <Stagger as="ul" inView className="mt-6">
           {events.map((e) => (
-            <StaggerItem as="li" key={e.id} className="grid grid-cols-[5.5rem_1fr_auto] items-baseline gap-4 border-t border-line py-3 text-sm">
-              <span className="text-xs text-faint tabular-nums">{new Date(e.created_at).toLocaleDateString("en-IN")}</span>
+            <StaggerItem as="li" key={e.id} className="grid grid-cols-[4rem_1fr_auto] items-baseline gap-4 border-t border-line py-3 text-sm">
+              <span className="text-xs text-faint tabular-nums">{new Date(e.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
               <span className={e.type === "GHOSTED" ? "font-medium text-rose-700" : "text-ink"}>{EVENT_TEXT[e.type]}</span>
               <span className="font-medium tabular-nums">₹{(e.amount / 100).toLocaleString("en-IN")}</span>
             </StaggerItem>

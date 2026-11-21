@@ -6,10 +6,10 @@ import { createDeal } from "@/lib/deals";
 const DEMO_PASSWORD = "pakka1234";
 
 const PEOPLE = [
-  { key: "meera", name: "Meera (D2C founder)", pan: "AAKPM1234C", gstin: "29AAKPM1234C1ZZ", phone: "9800000001" },
-  { key: "rohan", name: "Rohan (Shopify dev)", pan: "BQRPR5678K", gstin: "", phone: "9800000002" },
-  { key: "priya", name: "Priya (design studio)", pan: "CHVPP4321L", gstin: "27CHVPP4321L1ZO", phone: "9800000003" },
-  { key: "arjun", name: "Arjun (copywriter)", pan: "DKLPA8765M", gstin: "", phone: "9800000004" },
+  { key: "meera", name: "Meera", pan: "AAKPM1234C", gstin: "29AAKPM1234C1ZZ", phone: "9800000001" },
+  { key: "rohan", name: "Rohan", pan: "BQRPR5678K", gstin: "", phone: "9800000002" },
+  { key: "priya", name: "Priya", pan: "CHVPP4321L", gstin: "27CHVPP4321L1ZO", phone: "9800000003" },
+  { key: "arjun", name: "Arjun", pan: "DKLPA8765M", gstin: "", phone: "9800000004" },
 ];
 const CLIENTS = ["Kavya", "Nikhil", "Sana", "Imran", "Divya", "Farhan", "Leela"];
 
@@ -29,7 +29,7 @@ export async function POST() {
   }
   for (const c of CLIENTS) {
     const r = await auth.api.signUpEmail({
-      body: { name: `${c} (client)`, email: `${c.toLowerCase()}@pakka.demo`, password: DEMO_PASSWORD },
+      body: { name: c, email: `${c.toLowerCase()}@pakka.demo`, password: DEMO_PASSWORD },
     });
     ids[c] = r.user.id;
   }
@@ -72,11 +72,11 @@ export async function POST() {
     const s = createDeal({
       freelancerId: ids[freelancer],
       title,
-      milestones: milestones.map((m) => ({ title: m.title, amount: m.amount, checklist: m.checklist, dueDays: 4 })),
+      milestones: milestones.map((m, i) => ({ title: m.title, amount: m.amount, checklist: m.checklist, dueDays: 4 + i * 5 })),
     });
     const dealId = (db.prepare(`select id from deals where slug = ?`).get(s) as { id: string }).id;
     db.prepare(`update deals set client_id = ?, created_at = ? where id = ?`).run(ids[client], now - 6 * DAY, dealId);
-    const rows = db.prepare(`select id, checklist from milestones where deal_id = ? order by idx`).all(dealId) as { id: string; checklist: string }[];
+    const rows = db.prepare(`select id, checklist, amount from milestones where deal_id = ? order by idx`).all(dealId) as { id: string; checklist: string; amount: number }[];
     rows.forEach((r, i) => {
       const m = milestones[i];
       if (m.state === "AGREED") return;
@@ -96,6 +96,15 @@ export async function POST() {
         m.state === "RELEASED" ? "accepted" : null,
         r.id,
       );
+      const pay = `pay_seed${i}${r.id.slice(0, 6)}`;
+      const trf = `trf_seed${i}${r.id.slice(0, 6)}`;
+      const at = now - (5 - i * 2) * DAY;
+      const base = { amount: r.amount, milestone_id: r.id };
+      logEvent({ ...base, user_id: ids[client], type: "FUNDED", counterparty_id: ids[freelancer], ref: pay, created_at: at });
+      if (m.state === "RELEASED") {
+        logEvent({ ...base, user_id: ids[freelancer], type: "DELIVERED", counterparty_id: ids[client], ref: trf, created_at: at + DAY });
+        logEvent({ ...base, user_id: ids[client], type: "ACCEPTED", counterparty_id: ids[freelancer], ref: trf, created_at: at + DAY });
+      }
     });
     return s;
   };

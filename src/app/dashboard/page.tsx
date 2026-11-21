@@ -52,34 +52,41 @@ export default async function Dashboard() {
     .prepare(`${withMilestones} where d.client_id is null and d.freelancer_id != ? group by d.id order by d.created_at desc limit 5`)
     .all(u.id) as Row[];
 
+  const openFirst = !deals.length && open.length > 0;
+  const openList = open.length ? (
+    <section className="section">
+      <ListHead title="Links waiting for a client" count={open.length} />
+      <DealList deals={open} role={() => "Open to fund"} />
+    </section>
+  ) : null;
+
   return (
     <div>
       <header className="flex flex-wrap items-end justify-between gap-8 pb-12">
         <ScoreChip userId={u.id} name={u.name} role="Your score" size="lg" />
-        <div className="flex flex-wrap items-center gap-3">
-          <SeedButton />
-          <Link href="/new" className="btn">New deal</Link>
-        </div>
+        <Link href="/new" className="btn">New deal</Link>
       </header>
+
+      {openFirst ? openList : null}
 
       <section className="section">
         <ListHead title="Your deals" count={deals.length} />
         {deals.length ? (
           <DealList deals={deals} role={(d) => (d.freelancer_id === u.id ? "You're the freelancer" : "You're the client")} />
+        ) : openFirst ? (
+          <p className="mt-4 text-sm text-muted">No deals yet.</p>
         ) : (
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-6 border-y border-line py-8">
-            <p className="max-w-md text-ink-2">No deals yet. Create one and send the link to your client on WhatsApp.</p>
-            <Link href="/new" className="btn h-11 px-5">New deal</Link>
-          </div>
+          <p className="mt-6 max-w-md border-y border-line py-8 text-ink-2">
+            No deals yet. Create one and send the link to your client on WhatsApp.
+          </p>
         )}
       </section>
 
-      {open.length ? (
-        <section className="section">
-          <ListHead title="Open links waiting for a client" count={open.length} />
-          <DealList deals={open} role={() => "No client yet"} />
-        </section>
-      ) : null}
+      {openFirst ? null : openList}
+
+      <div className="flex justify-end pt-10 opacity-80">
+        <SeedButton />
+      </div>
     </div>
   );
 }

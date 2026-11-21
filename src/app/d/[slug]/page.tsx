@@ -13,10 +13,10 @@ const inr = (paise: number) => "₹" + (paise / 100).toLocaleString("en-IN");
 const when = (t: number) => new Date(t).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
 const STATE: Record<string, { label: string; tone: string; note: string }> = {
-  AGREED: { label: "Not funded yet", tone: "chip-zinc", note: "Don't start work until this says Held by Razorpay." },
+  AGREED: { label: "Not funded yet", tone: "chip-zinc", note: "Work starts once this says Held by Razorpay." },
   FUNDING: { label: "Confirming payment…", tone: "chip-zinc", note: "" },
   FUNDED: { label: "Held by Razorpay", tone: "chip-emerald", note: "Razorpay is holding the money. Work can start." },
-  SUBMITTED: { label: "Delivered · in review", tone: "chip-amber", note: "The client has 72 hours to accept or say what's missing. No reply counts as accepted." },
+  SUBMITTED: { label: "Delivered · in review", tone: "chip-amber", note: "The client has 72 hours to accept or send it back. No reply means accepted." },
   RELEASING: { label: "Paying out…", tone: "chip-amber", note: "" },
   RELEASED: { label: "Paid out", tone: "chip-emerald", note: "" },
   REFUNDING: { label: "Refunding…", tone: "chip-rose", note: "" },
@@ -67,6 +67,7 @@ export default async function DealPage({ params }: PageProps<"/d/[slug]">) {
     )
     .all(deal.id) as (EventRow & { name: string })[];
   const total = milestones.reduce((s, m) => s + m.amount, 0);
+  const showRecord = events.length > 0 || milestones.every((m) => m.state === "AGREED");
 
   return (
     <article>
@@ -104,28 +105,30 @@ export default async function DealPage({ params }: PageProps<"/d/[slug]">) {
         ))}
       </Stagger>
 
-      <section className="section">
-        <h2 className="text-xl font-semibold tracking-tight">Record</h2>
-        <p className="mt-1 text-[13px] text-muted">Every line has a Razorpay reference.</p>
-        {events.length === 0 ? <p className="mt-6 text-sm text-muted">Nothing has happened yet.</p> : null}
-        {events.length ? (
-          <Stagger as="ol" inView gap={0.05} className="mt-8 ml-1 border-l border-line">
-            {events.map((e) => (
-              <StaggerItem as="li" key={e.id} className="relative pb-6 pl-6 last:pb-0">
-                <span aria-hidden className={`absolute top-1.5 -left-[4.5px] size-2 rounded-full ring-4 ring-paper ${EVENT_DOT[e.type] ?? "bg-line-strong"}`} />
-                <div className="text-sm text-ink-2">
-                  <span className="font-semibold text-ink">{e.name}</span> {EVENT_TEXT[e.type]} ·{" "}
-                  <span className="font-medium text-ink tabular-nums">{inr(e.amount)}</span>
-                </div>
-                <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-faint tabular-nums">
-                  <span>{when(e.created_at)}</span>
-                  {e.ref ? <span className="font-mono">{e.ref}</span> : null}
-                </div>
-              </StaggerItem>
-            ))}
-          </Stagger>
-        ) : null}
-      </section>
+      {showRecord ? (
+        <section className="section">
+          <h2 className="text-xl font-semibold tracking-tight">Record</h2>
+          <p className="mt-1 text-[13px] text-muted">Every line has a Razorpay reference.</p>
+          {events.length === 0 ? <p className="mt-6 text-sm text-muted">Nothing has happened yet.</p> : null}
+          {events.length ? (
+            <Stagger as="ol" inView gap={0.05} className="mt-8 ml-1 border-l border-line">
+              {events.map((e) => (
+                <StaggerItem as="li" key={e.id} className="relative pb-6 pl-6 last:pb-0">
+                  <span aria-hidden className={`absolute top-1.5 -left-[4.5px] size-2 rounded-full ring-4 ring-paper ${EVENT_DOT[e.type] ?? "bg-line-strong"}`} />
+                  <div className="text-sm text-ink-2">
+                    <span className="font-semibold text-ink">{e.name}</span> {EVENT_TEXT[e.type]} ·{" "}
+                    <span className="font-medium text-ink tabular-nums">{inr(e.amount)}</span>
+                  </div>
+                  <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-faint tabular-nums">
+                    <span>{when(e.created_at)}</span>
+                    {e.ref ? <span className="font-mono">{e.ref}</span> : null}
+                  </div>
+                </StaggerItem>
+              ))}
+            </Stagger>
+          ) : null}
+        </section>
+      ) : null}
     </article>
   );
 }
@@ -178,7 +181,6 @@ function MilestoneSection({ m, slug, isFreelancer, isClient, signedIn }: {
                   </label>
                 ))}
               </div>
-              <p className="mt-2 text-xs text-muted">Tick every item to mark it delivered.</p>
             </fieldset>
             <label className="block space-y-1.5">
               <span className="label block">Where's the work?</span>
@@ -284,7 +286,7 @@ function MilestoneSection({ m, slug, isFreelancer, isClient, signedIn }: {
               <input type="hidden" name="m" value={m.id} />
               <input type="hidden" name="slug" value={slug} />
               <button className="inline-flex h-8 items-center gap-1.5 rounded-md border border-dashed border-line-strong bg-paper px-3 text-xs text-muted transition-colors hover:border-ink/40 hover:text-ink">
-                ⏩ Demo: fast-forward {m.state === "FUNDED" ? "past deadline" : "72h of client silence"}
+                Demo: fast-forward {m.state === "FUNDED" ? "past deadline" : "72h of client silence"}
               </button>
             </form>
           ) : null}

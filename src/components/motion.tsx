@@ -92,7 +92,7 @@ export function SpringNumber({
   const ref = useRef<HTMLSpanElement>(null);
   const seen = useInView(ref, { once: true, amount: 0.6 });
   const reduce = useReducedMotion();
-  const value = useSpring(from, { visualDuration: duration, bounce: 0 });
+  const value = useSpring(from, { visualDuration: duration, bounce: 0, restDelta: 0.5 });
   const text = useTransform(value, (v) => Math.round(v).toString());
 
   useEffect(() => {

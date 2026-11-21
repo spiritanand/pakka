@@ -10,7 +10,7 @@ export default async function NewDeal() {
         <div className="eyebrow">You're the freelancer</div>
         <h1 className="mt-4 text-4xl font-semibold tracking-[-0.03em] sm:text-5xl">New deal</h1>
         <p className="mt-4 text-lg leading-relaxed text-ink-2">
-          Split the job into milestones and write what “delivered” means for each. Then send the link to your client.
+          Split the job into milestones and say what delivered means for each.
         </p>
       </header>
 
@@ -26,7 +26,7 @@ export default async function NewDeal() {
       </section>
 
       {[0, 1].map((i) => (
-        <section key={i} className={`section grid gap-6 md:grid-cols-[14rem_1fr] md:gap-12 ${i ? "bg-wash" : ""}`}>
+        <section key={i} className="section grid gap-6 md:grid-cols-[14rem_1fr] md:gap-12">
           <div>
             <div className="font-mono text-sm text-faint tabular-nums">0{i + 1}</div>
             <h2 className={`mt-1 font-semibold ${i ? "text-ink-2" : ""}`}>
@@ -58,9 +58,11 @@ export default async function NewDeal() {
                 placeholder={"Homepage live on staging URL\n3 product pages"}
                 required={!i}
               />
-              <span className="block text-xs text-muted">
-                Keep each item checkable. Your client can only send work back by ticking one.
-              </span>
+              {i ? null : (
+                <span className="block text-xs text-muted">
+                  One checkable item per line. Your client sends work back by ticking what's missing.
+                </span>
+              )}
             </label>
           </div>
         </section>

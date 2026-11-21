@@ -9,12 +9,12 @@ const TONE: Record<string, string> = {
   New: "chip-zinc",
 };
 
-export function StableNumber({ from, to, className = "" }: { from: number; to: number; className?: string }) {
+export function StableNumber({ from, to, className = "", duration = 0.6 }: { from: number; to: number; className?: string; duration?: number }) {
   const widest = String(from).length > String(to).length ? from : to;
   return (
     <span className={`relative inline-block tabular-nums ${className}`}>
       <span aria-hidden className="invisible">{widest}</span>
-      <SpringNumber from={from} to={to} className="absolute inset-0 text-right" />
+      <SpringNumber from={from} to={to} duration={duration} className="absolute inset-0 text-right" />
     </span>
   );
 }
@@ -26,7 +26,7 @@ export function ScoreChip({ userId, name, role, size = "md" }: { userId: string;
     <Link href={`/u/${userId}`} prefetch={true} className="group inline-flex items-center gap-5 rounded-md">
       <span className="flex items-baseline gap-1">
         <span className={`font-semibold tracking-[-0.04em] text-ink tabular-nums ${lg ? "text-6xl sm:text-7xl" : "text-5xl"}`}>
-          {lg ? <StableNumber from={0} to={t.score} /> : t.score}
+          {lg ? <StableNumber from={Math.max(0, t.score - 40)} to={t.score} /> : t.score}
         </span>
         <span className="text-xs text-faint tabular-nums">/1000</span>
       </span>
