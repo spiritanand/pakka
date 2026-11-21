@@ -6,25 +6,24 @@ import { db, getUser, type EventRow } from "@/lib/db";
 import { panOk, gstinOk, trustScore } from "@/lib/score";
 import { vouch } from "../../actions";
 import { ScoreChip } from "../../score-chip";
-import { Stagger, StaggerItem } from "@/components/motion";
-import { day, firstName, safeNext } from "../../format";
+import { day, firstName, inr, safeNext } from "../../format";
 import { SubmitButton } from "@/components/submit-button";
 import { BackLink } from "@/components/back-link";
-import { BadgeCheck, BadgeIndianRupee, CircleAlert, CircleCheck, ExternalLink, HandHeart, Hourglass, Undo2, type LucideIcon } from "lucide-react";
+import { BadgeCheck, BadgeIndianRupee, ExternalLink, type LucideIcon } from "lucide-react";
 import { Tip } from "../../d/[slug]/share";
 
-const OUTCOME: Record<string, [string, string, LucideIcon]> = {
-  DELIVERED: ["Paid", "chip-emerald", CircleCheck],
-  ACCEPTED: ["Accepted", "chip-emerald", CircleCheck],
-  AUTO_RELEASED: ["Paid after silence", "chip-amber", Hourglass],
-  GHOSTED: ["Missed deadline", "chip-rose", CircleAlert],
-  REFUNDED: ["Refunded", "chip-rose", Undo2],
+const OUTCOME: Record<string, [string, string]> = {
+  DELIVERED: ["Paid", "chip-emerald"],
+  ACCEPTED: ["Accepted", "chip-emerald"],
+  AUTO_RELEASED: ["Paid after silence", "chip-amber"],
+  GHOSTED: ["Missed deadline", "chip-rose"],
+  REFUNDED: ["Refunded", "chip-rose"],
 };
 
 function Verified({ label, icon: Icon }: { label: string; icon: LucideIcon }) {
   return (
     <Tip label={label}>
-      <span role="img" aria-label={label} tabIndex={0} className="inline-flex rounded-full text-emerald-600">
+      <span role="img" aria-label={label} tabIndex={0} className="inline-flex rounded-sm text-emerald-600">
         <Icon size={20} strokeWidth={1.75} aria-hidden />
       </span>
     </Tip>
@@ -71,7 +70,7 @@ export default async function Profile({ params, searchParams }: PageProps<"/u/[i
 
   return (
     <div>
-      <div className="pb-8">
+      <div className="pb-6">
         {from.startsWith("/d/") ? (
           <BackLink href={from} label="Back to the deal" />
         ) : me ? (
@@ -99,56 +98,53 @@ export default async function Profile({ params, searchParams }: PageProps<"/u/[i
 
       <section className="hairline grid lg:grid-cols-2">
         <div className="py-10 lg:pr-12">
-          <h2 className="text-xl font-semibold tracking-tight">Where the score comes from</h2>
-          <Stagger as="ul" inView className="mt-6 text-sm">
+          <h2 className="text-heading">Where the score comes from</h2>
+          <ul className="mt-4 text-sm">
             {Object.entries(t.parts).filter(([, v]) => v !== 0).map(([k, v]) => (
-              <StaggerItem as="li" key={k} className="flex items-baseline justify-between gap-4 border-t border-line py-3">
+              <li key={k} className="flex items-baseline justify-between gap-4 border-t border-line py-3">
                 <span className="text-ink-2">{PART[k] ?? k}</span>
                 <span className={`font-medium tabular-nums ${v < 0 ? "text-rose-700" : "text-ink"}`}>
                   {v > 0 ? "+" : ""}{v}
                 </span>
-              </StaggerItem>
+              </li>
             ))}
-            <StaggerItem as="li" className="flex items-baseline justify-between gap-4 border-t-2 border-ink py-3">
-              <span className="font-semibold">Score</span>
-              <span className="text-lg font-semibold tabular-nums">{t.score}</span>
-            </StaggerItem>
-          </Stagger>
-          <p className="mt-4 max-w-prose text-xs leading-relaxed text-muted">
+            <li className="flex items-baseline justify-between gap-4 border-t border-ink py-3">
+              <span className="font-medium">Score</span>
+              <span className="font-medium tabular-nums">{t.score}</span>
+            </li>
+          </ul>
+          <p className="mt-2 max-w-prose text-meta text-muted">
             Only paid deals count. A missed deadline costs 300.
           </p>
         </div>
 
         <div className="border-t border-line py-10 lg:border-t-0 lg:border-l lg:pl-12">
-          <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
-            <HandHeart size={18} strokeWidth={1.75} aria-hidden className="text-emerald-700" />
-            Vouches
-          </h2>
+          <h2 className="text-heading">Vouches</h2>
           {t.vouchers.length === 0 ? <p className="mt-4 text-sm text-muted">None yet.</p> : null}
-          {t.vouchers.length ? <ul className="mt-6">
+          {t.vouchers.length ? <ul className="mt-4">
             {t.vouchers.map((v) => (
               <li key={v.voucher_id} className="border-t border-line py-3 text-sm">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <Link href={`/u/${v.voucher_id}`} className="link font-medium">{firstName(v.voucher_name)}</Link>
-                  <span className="text-xs text-muted tabular-nums">score {v.voucher_score} · adds <span className="font-medium text-emerald-700">+{v.weight}</span></span>
+                  <span className="text-meta text-muted tabular-nums">score {v.voucher_score} · adds <span className="font-medium text-emerald-700">+{v.weight}</span></span>
                 </div>
                 {v.note ? <p className="mt-1 text-ink-2">“{v.note}”</p> : null}
               </li>
             ))}
           </ul> : null}
           {given.length ? (
-            <p className="mt-4 text-sm text-muted">Vouches for: <span className="text-ink-2">{given.map((g) => firstName(g.name)).join(", ")}</span></p>
+            <p className="mt-4 text-meta text-muted">Vouches for: <span className="text-ink-2">{given.map((g) => firstName(g.name)).join(", ")}</span></p>
           ) : null}
           {canVouch ? (
             <form action={vouch} className={t.vouchers.length ? "mt-8 border-t border-line pt-6" : "mt-4"}>
               <input type="hidden" name="vouchee" value={u.id} />
               <label className="block space-y-1.5">
-                <span className="block font-semibold text-ink">Vouch for {firstName(u.name)}</span>
+                <span className="block font-medium text-ink">Vouch for {firstName(u.name)}</span>
                 <input className="input" name="note" placeholder="How do you know their work?" required />
               </label>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                <SubmitButton className="btn" busy="Vouching…"><HandHeart size={16} strokeWidth={1.75} aria-hidden />Vouch with my score</SubmitButton>
-                <p className="text-xs text-muted">If they miss a deadline after this, you lose 150 points.</p>
+                <SubmitButton className="btn" busy="Vouching…">Vouch with my score</SubmitButton>
+                <p className="text-meta text-muted">If they miss a deadline after this, you lose 150 points.</p>
               </div>
             </form>
           ) : null}
@@ -156,24 +152,21 @@ export default async function Profile({ params, searchParams }: PageProps<"/u/[i
       </section>
 
       <section className="section">
-        <h2 className="text-xl font-semibold tracking-tight">Recent outcomes</h2>
+        <h2 className="text-heading">Recent outcomes</h2>
         {events.length === 0 ? <p className="mt-4 text-sm text-muted">No finished deals yet.</p> : null}
-        <Stagger as="ul" inView className="mt-6">
+        <ul className="mt-4">
           {events.map((e) => (
-            <StaggerItem as="li" key={e.id} className="grid grid-cols-[4rem_1fr_auto] items-baseline gap-4 border-t border-line py-3 text-sm">
-              <span className="text-xs text-muted tabular-nums">{day(e.created_at)}</span>
+            <li key={e.id} className="grid grid-cols-[3.5rem_1fr_auto] items-baseline gap-4 border-t border-line py-3 text-sm">
+              <span className="text-meta text-muted tabular-nums">{day(e.created_at)}</span>
               <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
                 <span className="truncate text-ink">{e.title ?? (e.counterparty ? `Deal with ${firstName(e.counterparty)}` : "Deal")}</span>
-                {OUTCOME[e.type] ? (() => {
-                  const [text, tone, Icon] = OUTCOME[e.type];
-                  return <span className={tone}><Icon size={12} strokeWidth={2} aria-hidden />{text}</span>;
-                })() : null}
+                {OUTCOME[e.type] ? <span className={OUTCOME[e.type][1]}><span className="dot" />{OUTCOME[e.type][0]}</span> : null}
               </span>
-              <span className="font-medium tabular-nums">₹{(e.amount / 100).toLocaleString("en-IN")}</span>
-            </StaggerItem>
+              <span className="font-medium tabular-nums">{inr(e.amount)}</span>
+            </li>
           ))}
-        </Stagger>
-        <a href={`/api/trust/${u.id}`} target="_blank" rel="noopener noreferrer" className="mt-10 inline-flex items-center gap-1.5 text-xs text-muted underline decoration-line-strong underline-offset-4 hover:text-ink">
+        </ul>
+        <a href={`/api/trust/${u.id}`} target="_blank" rel="noopener noreferrer" className="mt-10 inline-flex items-center gap-1.5 text-meta text-muted underline decoration-line-strong underline-offset-4 hover:text-ink">
           This score as JSON
           <ExternalLink size={12} strokeWidth={1.75} aria-hidden />
         </a>

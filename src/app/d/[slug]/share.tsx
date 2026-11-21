@@ -19,7 +19,7 @@ export function Tip({ label, children, className = "" }: { label: string; childr
       {children}
       <span
         aria-hidden
-        className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 -translate-x-1/2 rounded-sm bg-ink px-2 py-1 text-[11px] leading-none font-medium whitespace-nowrap text-white opacity-0 transition-opacity group-focus-within/tip:opacity-100 group-hover/tip:opacity-100"
+        className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 -translate-x-1/2 rounded-sm bg-ink px-2 py-1 text-xs leading-none font-medium whitespace-nowrap text-white opacity-0 transition-opacity group-focus-within/tip:opacity-100 group-hover/tip:opacity-100"
       >
         {label}
       </span>

@@ -7,7 +7,6 @@ import { Tip, siteOrigin, whatsappHref } from "../d/[slug]/share";
 import { currentUser } from "@/lib/auth";
 import { db, type Deal } from "@/lib/db";
 import { getMilestones } from "@/lib/deals";
-import { Stagger, StaggerItem } from "@/components/motion";
 import { ScoreChip } from "../score-chip";
 import { SeedButton } from "../seed-button";
 import { day, firstName, inr } from "../format";
@@ -52,14 +51,6 @@ function summary(states: string) {
     .map(([s, n]) => ({ s, text: `${n} ${SHORT[s] ?? s.toLowerCase()}` }));
 }
 
-const TONE: Record<string, string> = {
-  FUNDED: "text-emerald-700",
-  SUBMITTED: "text-amber-700",
-  RELEASED: "text-ink-2",
-  DISPUTED: "text-rose-700",
-  REFUNDED: "text-rose-700",
-};
-
 const withMilestones = `select d.*, sum(m.amount) as total, group_concat(m.state) as states, f.name as freelancer_name, c.name as client_name
   from deals d join milestones m on m.deal_id = d.id join user f on f.id = d.freelancer_id left join user c on c.id = d.client_id`;
 
@@ -95,7 +86,7 @@ export default async function Dashboard() {
           {deals.length ? (
             <DealList origin={origin} deals={deals} role={(d) => (d.freelancer_id === u.id ? (d.client_name ? `For ${firstName(d.client_name)}` : "No client yet") : `From ${firstName(d.freelancer_name ?? "")}`)} action={(d) => actions.get(d.id) ?? null} />
           ) : (
-            <p className="mt-6 max-w-md border-y border-line py-8 text-ink-2">
+            <p className="mt-4 max-w-md text-ink-2">
               No deals yet. Create one and send the link to your client on WhatsApp.
             </p>
           )}
@@ -104,7 +95,7 @@ export default async function Dashboard() {
 
       {open.length ? (
         <section className="section">
-          <ListHead title={waiting ? "Waiting for you" : "Demo deals you can fund"} count={open.length} tag={waiting ? undefined : "demo"} />
+          <ListHead title={waiting ? "Waiting for you" : "Demo deals you can fund"} count={open.length} />
           <DealList
             origin={origin}
             deals={open}
@@ -117,79 +108,67 @@ export default async function Dashboard() {
         </section>
       ) : null}
 
-      <div className="flex justify-end pt-6">
+      <div className="flex justify-end">
         <SeedButton />
       </div>
     </div>
   );
 }
 
-function ListHead({ title, count, tag }: { title: string; count: number; tag?: string }) {
+function ListHead({ title, count }: { title: string; count: number }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
-      <h2 className="flex items-center gap-2.5 text-xl font-semibold tracking-tight">
-        {title}
-        {tag ? <span className="chip-zinc font-normal tracking-normal">{tag}</span> : null}
-      </h2>
-      <span className="text-[13px] text-muted tabular-nums">{count}</span>
+      <h2 className="text-heading">{title}</h2>
+      <span className="text-meta text-muted tabular-nums">{count}</span>
     </div>
   );
 }
 
-const ACTION = "grid size-7 place-items-center rounded-md text-muted transition-colors hover:bg-paper hover:text-ink";
+const ACTION = "grid size-8 place-items-center rounded-md text-muted transition-colors hover:bg-paper hover:text-ink";
 
 function DealList({ deals, role, meta, action, origin }: {
   deals: Row[]; role: (d: Row) => string; meta?: (d: Row) => string; action?: (d: Row) => Action | null; origin: string;
 }) {
   return (
-    <Stagger as="ul" className="mt-6 border-t border-line">
+    <ul className="mt-4 border-t border-line">
       {deals.map((d) => {
         const act = action?.(d);
+        const detail = meta ? meta(d) : summary(d.states).map((p) => p.text).join(" · ");
         return (
-        <StaggerItem as="li" key={d.id} className="border-b border-line">
-          <div className="group relative -mx-3 grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 rounded-sm px-3 py-4 transition-colors hover:bg-wash sm:gap-x-6">
-            <span className="min-w-0">
-              <Link href={`/d/${d.slug}`} className="line-clamp-2 font-medium break-words text-ink after:absolute after:inset-0 after:rounded-sm sm:line-clamp-1">
-                {d.title}
-              </Link>
-              <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
-                {act ? <span className={act.tone}>{act.text}</span> : null}
-                <span className={act ? "" : "chip-zinc"}>{role(d)}</span>
-                <span className="tabular-nums">
-                  {meta
-                    ? meta(d)
-                    : summary(d.states).map((p, i) => (
-                        <span key={p.s}>
-                          {i ? <span className="text-faint"> · </span> : null}
-                          <span className={TONE[p.s] ?? ""}>{p.text}</span>
-                        </span>
-                      ))}
+          <li key={d.id} className="border-b border-line">
+            <div className="group relative -mx-3 grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 rounded-md px-3 py-4 transition-colors hover:bg-wash sm:gap-x-6">
+              <span className="min-w-0">
+                <Link href={`/d/${d.slug}`} className="line-clamp-2 font-medium break-words text-ink after:absolute after:inset-0 after:rounded-md sm:line-clamp-1">
+                  {d.title}
+                </Link>
+                <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-muted tabular-nums">
+                  {act ? <span className={act.tone}>{act.text}</span> : null}
+                  <span>{role(d)} · {detail}</span>
                 </span>
               </span>
-            </span>
-            <span className="flex items-center gap-3 sm:gap-4">
-              <span className="relative z-10 hidden items-center gap-0.5 transition-opacity sm:flex pointer-fine:opacity-0 pointer-fine:group-focus-within:opacity-100 pointer-fine:group-hover:opacity-100">
-                <Tip label="Copy link">
-                  <CopyButton value={`/d/${d.slug}`} href variant="icon" label="Copy link" className="hover:bg-paper!" />
-                </Tip>
-                <Tip label="Share on WhatsApp">
-                  <a href={whatsappHref(`${origin}/d/${d.slug}`, d.title)} target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp" className={ACTION}>
-                    <MessageCircle size={16} strokeWidth={1.75} aria-hidden />
-                  </a>
-                </Tip>
-                <Tip label="Open in new tab">
-                  <Link href={`/d/${d.slug}`} target="_blank" rel="noopener noreferrer" aria-label="Open in new tab" className={ACTION}>
-                    <SquareArrowOutUpRight size={16} strokeWidth={1.75} aria-hidden />
-                  </Link>
-                </Tip>
+              <span className="flex items-center gap-3 sm:gap-4">
+                <span className="relative z-10 hidden items-center gap-0.5 transition-opacity sm:flex pointer-fine:opacity-0 pointer-fine:group-focus-within:opacity-100 pointer-fine:group-hover:opacity-100">
+                  <Tip label="Copy link">
+                    <CopyButton value={`/d/${d.slug}`} href variant="icon" label="Copy link" className="hover:bg-paper!" />
+                  </Tip>
+                  <Tip label="Share on WhatsApp">
+                    <a href={whatsappHref(`${origin}/d/${d.slug}`, d.title)} target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp" className={ACTION}>
+                      <MessageCircle size={16} strokeWidth={1.75} aria-hidden />
+                    </a>
+                  </Tip>
+                  <Tip label="Open in new tab">
+                    <Link href={`/d/${d.slug}`} target="_blank" rel="noopener noreferrer" aria-label="Open in new tab" className={ACTION}>
+                      <SquareArrowOutUpRight size={16} strokeWidth={1.75} aria-hidden />
+                    </Link>
+                  </Tip>
+                </span>
+                <span className="font-medium text-ink tabular-nums">{inr(d.total)}</span>
+                <ArrowRight size={16} strokeWidth={1.75} aria-hidden className="text-muted transition-colors group-hover:text-emerald-700" />
               </span>
-              <span className="font-semibold text-ink tabular-nums">{inr(d.total)}</span>
-              <ArrowRight size={16} strokeWidth={1.75} aria-hidden className="text-faint transition-colors group-hover:text-emerald-700" />
-            </span>
-          </div>
-        </StaggerItem>
+            </div>
+          </li>
         );
       })}
-    </Stagger>
+    </ul>
   );
 }

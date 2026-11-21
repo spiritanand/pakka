@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { signIn, signUp } from "../actions";
 import { SeedButton } from "../seed-button";
-import { Enter } from "@/components/motion";
 import { SubmitButton } from "@/components/submit-button";
 import { firstName, safeNext } from "../format";
 import { getUser } from "@/lib/db";
@@ -48,18 +47,18 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
   return (
     <div className="grid gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-0">
       <section className="lg:pt-2 lg:pr-14">
-        {payer ? <div className="pb-8"><BackLink href={next} label="Back to the deal" /></div> : null}
-        <h1 className="text-3xl font-semibold tracking-[-0.03em] text-balance text-ink sm:text-4xl">
+        {payer ? <div className="pb-6"><BackLink href={next} label="Back to the deal" /></div> : null}
+        <h1 className="text-title">
           {payer ? `Fund ${payer.title}` : "The money waits until the work is done."}
         </h1>
-        <p className="mt-4 max-w-lg text-lg leading-relaxed text-ink-2">
+        <p className="mt-3 max-w-lg text-ink-2">
           {payer
             ? `Your money goes to Razorpay, not to ${payer.freelancer}. Create an account so the refund knows where to go.`
             : "Your client pays up front. Razorpay holds it until you deliver."}
         </p>
         <div className="mt-8">
-          <h2 className="text-sm font-semibold text-ink">Or try the demo</h2>
-          <div className="mt-4 grid max-w-sm grid-cols-2 gap-2">
+          <h2 className="text-sm font-medium text-ink">Or try the demo</h2>
+          <div className="mt-3 grid max-w-sm grid-cols-2 gap-2">
             {PERSONAS.map(([k, label]) => (
               <form key={k} action={signIn}>
                 <input type="hidden" name="email" value={`${k}@pakka.demo`} />
@@ -77,14 +76,14 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
 
       <section className="border-t border-line pt-10 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-14">
         <div className="max-w-md">
-          <nav aria-label="Account" className="inline-flex rounded-lg border border-line bg-wash p-1 text-sm">
+          <nav aria-label="Account" className="inline-flex rounded-md bg-wash p-1 text-sm">
             {[["signup", "Create account"], ["signin", "Sign in"]].map(([m, label]) => (
               <Link
                 key={m}
                 href={href(m)}
                 aria-current={mode === m ? "page" : undefined}
-                className={`rounded-md px-4 py-1.5 font-medium transition-colors ${
-                  mode === m ? "bg-paper text-ink shadow-[0_1px_2px_rgba(0,0,0,0.06)]" : "text-muted hover:text-ink"
+                className={`rounded-sm px-4 py-1.5 font-medium transition-colors ${
+                  mode === m ? "bg-paper text-ink ring-1 ring-line" : "text-muted hover:text-ink"
                 }`}
               >
                 {label}
@@ -92,13 +91,12 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
             ))}
           </nav>
 
-          <Enter key={mode} y={6}>
           {mode === "signup" ? (
             <form action={signUp} className="mt-8 space-y-4">
               <input type="hidden" name="next" value={next} />
               <div>
-                <h2 className="text-2xl font-semibold tracking-tight">Create your account</h2>
-                <p className="mt-1.5 text-sm text-muted">
+                <h2 className="text-heading">Create your account</h2>
+                <p className="mt-1 text-sm text-muted">
                   {payer ? "Takes a minute. Just your name, email and a password." : "Takes a minute. PAN and GSTIN are optional and raise your starting score."}
                 </p>
               </div>
@@ -119,28 +117,21 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
                 </div>
               )}
               {error ? <p role="alert" className="text-sm text-rose-700">{error}</p> : null}
-              <SubmitButton className="btn h-11 w-full" busy="Creating account…">Create account</SubmitButton>
-              <p className="text-center text-sm text-muted">
-                Already have an account? <Link href={href("signin")} className="link">Sign in</Link>
-              </p>
+              <SubmitButton className="btn w-full" busy="Creating account…">Create account</SubmitButton>
             </form>
           ) : (
             <form action={signIn} className="mt-8 space-y-4">
               <input type="hidden" name="next" value={next} />
               <div>
-                <h2 className="text-2xl font-semibold tracking-tight">Welcome back</h2>
-                <p className="mt-1.5 text-sm text-muted">Your deals are where you left them.</p>
+                <h2 className="text-heading">Welcome back</h2>
+                <p className="mt-1 text-sm text-muted">Your deals are where you left them.</p>
               </div>
               <Field label="Email"><input className="input" name="email" type="email" placeholder="you@example.com" autoComplete="email" required autoFocus /></Field>
               <Field label="Password"><input className="input" name="password" type="password" placeholder="Password" autoComplete="current-password" required /></Field>
               {error ? <p role="alert" className="text-sm text-rose-700">{error}</p> : null}
-              <SubmitButton className="btn h-11 w-full" busy="Signing in…">Sign in</SubmitButton>
-              <p className="text-center text-sm text-muted">
-                New to Pakka? <Link href={href("signup")} className="link">Create an account</Link>
-              </p>
+              <SubmitButton className="btn w-full" busy="Signing in…">Sign in</SubmitButton>
             </form>
           )}
-          </Enter>
         </div>
       </section>
     </div>

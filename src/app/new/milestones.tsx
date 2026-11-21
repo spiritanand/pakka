@@ -48,15 +48,14 @@ export function MilestoneFields({ initial, submitLabel = "Create Pakka link", bu
             className="section grid gap-6 md:grid-cols-[14rem_1fr] md:gap-12"
           >
             <div>
-              <div className="font-mono text-sm text-muted tabular-nums">0{i + 1}</div>
-              <h2 className={`mt-1 font-semibold ${required ? "" : "text-ink-2"}`}>
+              <h2 className={`font-medium ${required ? "text-ink" : "text-ink-2"}`}>
                 Milestone {i + 1}
                 {i && !started ? <span className="font-normal text-muted"> (optional)</span> : null}
               </h2>
               {i ? (
-                started ? <p className="mt-1 text-[13px] text-muted">Fill in all of it, or clear it to leave it out.</p> : null
+                started ? <p className="mt-1 text-meta text-muted">Fill in all of it, or clear it to leave it out.</p> : null
               ) : (
-                <p className="mt-1 text-[13px] text-muted">Each milestone is funded and paid separately.</p>
+                <p className="mt-1 text-meta text-muted">Each milestone is funded and paid separately.</p>
               )}
             </div>
             <div className="space-y-4">
@@ -72,14 +71,14 @@ export function MilestoneFields({ initial, submitLabel = "Create Pakka link", bu
                 <label className="block space-y-1.5">
                   <span className="label block">Days to deliver</span>
                   <input className="input tabular-nums" name="m_due" type="number" min="1" defaultValue={row.due ?? (i ? 14 : 7)} />
-                  {i ? null : <span className="block text-xs leading-snug text-muted">Counted from the day your client pays</span>}
+                  {i ? null : <span className="block text-meta text-muted">Counted from the day your client pays</span>}
                 </label>
               </div>
               <label className="block space-y-1.5">
                 <span className="label block">Delivered means</span>
                 <textarea className="input min-h-28 leading-relaxed" name="m_checklist" defaultValue={row.checklist} placeholder={PLACEHOLDER[i].checklist} required={required} />
                 {i ? null : (
-                  <span className="block text-xs text-muted">One item per line. Your client ticks what's missing if they send it back.</span>
+                  <span className="block text-meta text-muted">One item per line. Your client ticks what's missing if they send it back.</span>
                 )}
               </label>
             </div>
@@ -89,7 +88,7 @@ export function MilestoneFields({ initial, submitLabel = "Create Pakka link", bu
 
       {rows.length < MAX ? (
         <div className="section py-6! sm:py-8!">
-          <button type="button" onClick={() => setRows((r) => [...r, EMPTY])} className="btn-ghost h-12 w-full border-dashed text-muted hover:text-ink">
+          <button type="button" onClick={() => setRows((r) => [...r, EMPTY])} className="btn-ghost w-full border-dashed text-muted hover:text-ink">
             <Plus size={16} strokeWidth={1.75} aria-hidden />
             Add milestone
           </button>
@@ -97,17 +96,17 @@ export function MilestoneFields({ initial, submitLabel = "Create Pakka link", bu
       ) : null}
 
       <section className="section flex flex-wrap items-center justify-between gap-4">
-        <p className="text-[13px] text-muted">Your client pays nothing until they fund a milestone.</p>
+        <p className="text-meta text-muted">Your client pays nothing until they fund a milestone.</p>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
           <p aria-live="polite" className="text-sm text-ink-2 tabular-nums">
             {total ? (
               <>
-                Total <span className="font-semibold text-ink">₹{total.toLocaleString("en-IN")}</span> across {filled.length} milestone
+                Total <span className="font-medium text-ink">₹{total.toLocaleString("en-IN")}</span> across {filled.length} milestone
                 {filled.length === 1 ? "" : "s"}
               </>
             ) : null}
           </p>
-          <SubmitButton className="btn h-11 px-5" busy={busyLabel}>{submitLabel}</SubmitButton>
+          <SubmitButton className="btn" busy={busyLabel}>{submitLabel}</SubmitButton>
         </div>
       </section>
     </>
