@@ -31,7 +31,12 @@ export const auth = betterAuth(authOptions);
 
 const g = globalThis as unknown as { __pakkaMigrated?: Promise<void> };
 export function ensureMigrated() {
-  g.__pakkaMigrated ??= getMigrations(authOptions).then((m) => m.runMigrations());
+  g.__pakkaMigrated ??= getMigrations(authOptions)
+    .then((m) => m.runMigrations())
+    .catch((e) => {
+      g.__pakkaMigrated = undefined;
+      throw e;
+    });
   return g.__pakkaMigrated;
 }
 

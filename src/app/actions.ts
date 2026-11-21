@@ -31,6 +31,7 @@ export async function signUp(form: FormData) {
   const phone = String(form.get("phone") ?? "").trim();
   if (pan && db.prepare(`select 1 from user where upper(pan) = ?`).get(pan)) backToLogin(form, "signup", "pan");
   if (phone && db.prepare(`select 1 from user where phone = ?`).get(phone)) backToLogin(form, "signup", "phone");
+  if (String(form.get("email") ?? "").trim().toLowerCase().endsWith("@pakka.demo")) backToLogin(form, "signup", "email");
   let error = "";
   try {
     await auth.api.signUpEmail({
