@@ -63,7 +63,6 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             </span>
             <span className="flex flex-wrap items-center gap-x-5 gap-y-1">
               <MarkdownLink />
-              <span>Test mode. No real money moves.</span>
             </span>
           </div>
         </footer>
