@@ -15,7 +15,7 @@ export function BackLink({ href, label, className = "" }: { href: string; label:
       animate="rest"
       whileHover="hover"
       whileFocus="hover"
-      className={`inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink ${className}`}
+      className={`inline-flex items-center gap-1.5 text-meta text-muted transition-colors hover:text-ink ${className}`}
     >
       <motion.span variants={{ rest: { x: 0 }, hover: { x: -3 } }} transition={spring.snappy} className="inline-flex">
         <ArrowLeft size={16} strokeWidth={1.75} aria-hidden />

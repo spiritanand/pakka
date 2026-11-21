@@ -147,7 +147,7 @@ export default async function Profile({ params, searchParams }: PageProps<"/u/[i
                 <input className="input" name="note" placeholder="How do you know their work?" required />
               </label>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                <SubmitButton className="btn-ink" busy="Vouching…"><HandHeart size={16} strokeWidth={1.75} aria-hidden />Vouch with my score</SubmitButton>
+                <SubmitButton className="btn" busy="Vouching…"><HandHeart size={16} strokeWidth={1.75} aria-hidden />Vouch with my score</SubmitButton>
                 <p className="text-xs text-muted">If they miss a deadline after this, you lose 150 points.</p>
               </div>
             </form>
