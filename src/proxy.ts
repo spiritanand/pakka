@@ -8,6 +8,9 @@ function prefersMarkdown(accept: string) {
 }
 
 export function proxy(request: NextRequest) {
+  if (request.nextUrl.searchParams.get("view") === "machine") {
+    return NextResponse.rewrite(new URL("/machine", request.url));
+  }
   if (prefersMarkdown(request.headers.get("accept") ?? "")) {
     return NextResponse.rewrite(new URL("/index.md", request.url));
   }
