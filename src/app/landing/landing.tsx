@@ -80,17 +80,6 @@ const CLOSE: Record<Audience, { lead: string; rest: string }> = {
 const other = (a: Audience): Audience => (a === "freelancing" ? "paying" : "freelancing");
 
 // Both audiences' text share one grid cell so switching pages never changes the block's height.
-function Same({ shown, ghost }: { shown: ReactNode; ghost: ReactNode }) {
-  return (
-    <span className="grid">
-      <span className="col-start-1 row-start-1">{shown}</span>
-      <span aria-hidden className="invisible col-start-1 row-start-1">
-        {ghost}
-      </span>
-    </span>
-  );
-}
-
 function TwoTone({ lead, rest }: { lead: string; rest: string }) {
   return (
     <>
@@ -121,7 +110,6 @@ function Ctas({ audience, demoHref = "#how" }: { audience: Audience; demoHref?: 
 
 export function Landing({ audience, demoHref }: { audience: Audience; demoHref?: string }) {
   const hero = HERO[audience];
-  const ghost = HERO[other(audience)];
   const sides = [SIDES[audience], SIDES[other(audience)]];
   const close = CLOSE[audience];
 
@@ -138,10 +126,10 @@ export function Landing({ audience, demoHref }: { audience: Audience; demoHref?:
             <img src="/razorpay.svg" alt="Razorpay" width={95} height={20} className="h-5 w-auto" />
           </p>
           <h1 className="mt-6 max-w-xl text-display text-ink">
-            <Same shown={<TwoTone lead={hero.lead} rest={hero.rest} />} ghost={<TwoTone lead={ghost.lead} rest={ghost.rest} />} />
+            <TwoTone lead={hero.lead} rest={hero.rest} />
           </h1>
           <p className="mt-5 max-w-md text-lg leading-relaxed text-ink-2">
-            <Same shown={hero.sub} ghost={ghost.sub} />
+            {hero.sub}
           </p>
           <div className="mt-8">
             <Ctas audience={audience} demoHref={demoHref} />
@@ -212,12 +200,6 @@ export function Landing({ audience, demoHref }: { audience: Audience; demoHref?:
           </div>
           <div className="min-w-0">
             <ApiDemo />
-            <p className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-meta text-muted">
-              <Link href="/machine" className="link text-muted">
-                For AI agents
-              </Link>
-              <code className="font-mono text-xs break-all">curl -H &quot;Accept: text/markdown&quot; https://pakka.zwala.dev</code>
-            </p>
           </div>
         </div>
       </section>
