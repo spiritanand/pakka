@@ -5,13 +5,23 @@ import { db, getUser, type EventRow } from "@/lib/db";
 import { panOk, gstinOk, trustScore } from "@/lib/score";
 import { vouch } from "../../actions";
 import { ScoreChip } from "../../score-chip";
+import { Stagger, StaggerItem } from "@/components/motion";
 
 const EVENT_TEXT: Record<string, string> = {
-  DELIVERED: "Delivered & paid",
-  ACCEPTED: "Released payment on time",
-  AUTO_RELEASED: "Went silent in review (auto-released)",
-  GHOSTED: "Ghosted — missed deadline, refunded",
+  DELIVERED: "Delivered and paid",
+  ACCEPTED: "Accepted the work",
+  AUTO_RELEASED: "Didn't reply in review, paid out automatically",
+  GHOSTED: "Missed the deadline, client refunded",
   REFUNDED: "Got a refund",
+};
+
+const PART: Record<string, string> = {
+  identity: "Identity",
+  track: "Track record",
+  reliability: "Reliability",
+  penalties: "Penalties",
+  cascade: "Losses from people you vouched for",
+  vouches: "Vouches",
 };
 
 export default async function Profile({ params }: PageProps<"/u/[id]">) {
@@ -33,33 +43,31 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
       <header className="flex flex-wrap items-end justify-between gap-8 pb-12">
         <ScoreChip userId={u.id} name={u.name} size="lg" />
         <div className="flex flex-wrap gap-2">
-          <span className={panOk(u.pan) ? "chip-emerald" : "chip-zinc"}>PAN {panOk(u.pan) ? "✓ format-verified" : "not added"}</span>
-          <span className={gstinOk(u.gstin) ? "chip-emerald" : "chip-zinc"}>GSTIN {gstinOk(u.gstin) ? "✓ checksum-verified" : "not added"}</span>
+          <span className={panOk(u.pan) ? "chip-emerald" : "chip-zinc"}>{panOk(u.pan) ? "PAN ✓ format checked" : "No PAN"}</span>
+          <span className={gstinOk(u.gstin) ? "chip-emerald" : "chip-zinc"}>{gstinOk(u.gstin) ? "GSTIN ✓ checksum checked" : "No GSTIN"}</span>
         </div>
       </header>
 
       <section className="hairline grid lg:grid-cols-2">
         <div className="py-10 lg:pr-12">
-          <h2 className="text-xl font-semibold tracking-tight">How the score is built</h2>
-          <table className="mt-6 w-full text-sm">
-            <tbody>
-              {Object.entries(t.parts).map(([k, v]) => (
-                <tr key={k} className="border-t border-line">
-                  <td className="py-3 capitalize text-ink-2">{k}</td>
-                  <td className={`py-3 text-right font-medium tabular-nums ${v < 0 ? "text-rose-700" : v > 0 ? "text-ink" : "text-faint"}`}>
-                    {v > 0 ? "+" : ""}{v}
-                  </td>
-                </tr>
-              ))}
-              <tr className="border-t-2 border-ink">
-                <td className="py-3 font-semibold">Score</td>
-                <td className="py-3 text-right text-lg font-semibold tabular-nums">{t.score}</td>
-              </tr>
-            </tbody>
-          </table>
+          <h2 className="text-xl font-semibold tracking-tight">Where the score comes from</h2>
+          <Stagger as="ul" inView className="mt-6 text-sm">
+            {Object.entries(t.parts).map(([k, v]) => (
+              <StaggerItem as="li" key={k} className="flex items-baseline justify-between gap-4 border-t border-line py-3">
+                <span className="text-ink-2">{PART[k] ?? k}</span>
+                <span className={`font-medium tabular-nums ${v < 0 ? "text-rose-700" : v > 0 ? "text-ink" : "text-faint"}`}>
+                  {v > 0 ? "+" : ""}{v}
+                </span>
+              </StaggerItem>
+            ))}
+            <StaggerItem as="li" className="flex items-baseline justify-between gap-4 border-t-2 border-ink py-3">
+              <span className="font-semibold">Score</span>
+              <span className="text-lg font-semibold tabular-nums">{t.score}</span>
+            </StaggerItem>
+          </Stagger>
           <p className="mt-4 max-w-prose text-xs leading-relaxed text-muted">
-            Only money-verified outcomes count. Max 3 deals per counterparty. A ghost costs 300; every ghost by someone you
-            vouched for costs you 150.
+            Only paid outcomes count, and only 3 deals with the same person. A missed funded deadline costs 300, and each
+            person who vouched for them loses 150. A client who doesn't reply in review loses 40.
           </p>
         </div>
 
@@ -81,14 +89,16 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
             <p className="mt-4 text-sm text-muted">Vouches for: <span className="text-ink-2">{given.map((g) => g.name).join(", ")}</span></p>
           ) : null}
           {me && me.id !== u.id && !already ? (
-            <form action={vouch} className="mt-8 space-y-3 border-t border-line pt-6">
+            <form action={vouch} className="mt-8 border-t border-line pt-6">
               <input type="hidden" name="vouchee" value={u.id} />
               <label className="block space-y-1.5">
-                <span className="label block">Vouch for {u.name}</span>
+                <span className="block font-semibold text-ink">Vouch for {u.name}</span>
                 <input className="input" name="note" placeholder="How do you know their work?" required />
               </label>
-              <button className="btn-ink">Vouch — put my score on the line</button>
-              <p className="text-xs text-muted">If they ghost a client after this, you lose 150 points.</p>
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <button className="btn-ink">Vouch with my score</button>
+                <p className="text-xs text-muted">If they miss a funded deadline after this, you lose 150 points.</p>
+              </div>
             </form>
           ) : null}
         </div>
@@ -102,15 +112,15 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
           </a>
         </div>
         {events.length === 0 ? <p className="mt-4 text-sm text-muted">No finished deals yet.</p> : null}
-        <ul className="mt-6">
+        <Stagger as="ul" inView className="mt-6">
           {events.map((e) => (
-            <li key={e.id} className="grid grid-cols-[5.5rem_1fr_auto] items-baseline gap-4 border-t border-line py-3 text-sm">
+            <StaggerItem as="li" key={e.id} className="grid grid-cols-[5.5rem_1fr_auto] items-baseline gap-4 border-t border-line py-3 text-sm">
               <span className="text-xs text-faint tabular-nums">{new Date(e.created_at).toLocaleDateString("en-IN")}</span>
               <span className={e.type === "GHOSTED" ? "font-medium text-rose-700" : "text-ink"}>{EVENT_TEXT[e.type]}</span>
               <span className="font-medium tabular-nums">₹{(e.amount / 100).toLocaleString("en-IN")}</span>
-            </li>
+            </StaggerItem>
           ))}
-        </ul>
+        </Stagger>
       </section>
     </div>
   );

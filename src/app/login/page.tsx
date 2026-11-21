@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { signIn, signUp } from "../actions";
 import { SeedButton } from "../seed-button";
+import { Enter } from "@/components/motion";
 
 const PERSONAS = [
   ["meera", "Meera · client"],
@@ -12,9 +13,9 @@ const PERSONAS = [
 ];
 
 const RULES = [
-  ["Freelancer misses the deadline", "Client is refunded in full."],
-  ["Client goes silent after delivery", "Freelancer is paid in 72h."],
-  ["Every outcome", "Moves both scores, and the scores of whoever vouched."],
+  ["Freelancer misses the deadline", "The client gets a full refund."],
+  ["Client says nothing after delivery", "The freelancer is paid after 72 hours."],
+  ["Every finished deal", "Moves both scores, and the scores of anyone who vouched for them."],
 ];
 
 export default async function Login({ searchParams }: PageProps<"/login">) {
@@ -26,13 +27,13 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
   return (
     <div className="grid gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-0">
       <section className="lg:pr-14">
-        <div className="eyebrow">Pay links for WhatsApp deals</div>
+        <div className="eyebrow">For deals made on WhatsApp</div>
         <h1 className="mt-4 text-5xl font-semibold leading-[1.02] tracking-[-0.035em] text-balance text-ink sm:text-6xl">
-          Whoever moves first is exposed.
+          The money waits until the work is done.
         </h1>
         <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-2">
-          A pay link that <span className="font-medium text-ink">holds the money on Razorpay</span> until the work lands, and
-          turns every finished deal into a <span className="font-medium text-ink">0–1000 trust score</span> both sides carry anywhere.
+          Your client pays up front and <span className="font-medium text-ink">Razorpay holds it</span>. You're paid when you
+          deliver, and every finished deal builds a <span className="font-medium text-ink">0–1000 trust score</span>.
         </p>
         <dl className="mt-10 max-w-lg border-t border-line">
           {RULES.map(([k, v]) => (
@@ -47,7 +48,7 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
             <h2 className="text-sm font-semibold text-ink">Try the demo as</h2>
             <SeedButton />
           </div>
-          <p className="mt-1 text-[13px] text-muted">One click signs you in. Open a second browser to play the other side.</p>
+          <p className="mt-1 text-[13px] text-muted">One click signs you in. Use a second browser to play the other side.</p>
           <div className="mt-4 flex flex-wrap gap-2">
             {PERSONAS.map(([k, label]) => (
               <form key={k} action={signIn}>
@@ -79,12 +80,13 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
             ))}
           </div>
 
+          <Enter key={mode} y={6}>
           {mode === "signup" ? (
             <form action={signUp} className="mt-8 space-y-4">
               <input type="hidden" name="next" value={next} />
               <div>
-                <h2 className="text-2xl font-semibold tracking-tight">Start your first protected deal</h2>
-                <p className="mt-1.5 text-sm text-muted">Free for freelancers. Your score is tied to your PAN, so it follows you off the platform.</p>
+                <h2 className="text-2xl font-semibold tracking-tight">Create your account</h2>
+                <p className="mt-1.5 text-sm text-muted">Add your PAN and your score starts 60 points higher. A GSTIN adds 40 more.</p>
               </div>
               <Field label="Name"><input className="input" name="name" placeholder="Your name" autoComplete="name" required autoFocus /></Field>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -93,7 +95,7 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
               </div>
               <Field label="Password"><input className="input" name="password" type="password" placeholder="6 characters or more" autoComplete="new-password" minLength={6} required /></Field>
               <div className="grid grid-cols-2 gap-4">
-                <Field label="PAN"><input className="input uppercase" name="pan" placeholder="ABCDE1234F" maxLength={10} /></Field>
+                <Field label="PAN (optional)"><input className="input uppercase" name="pan" placeholder="ABCDE1234F" maxLength={10} /></Field>
                 <Field label="GSTIN (optional)"><input className="input uppercase" name="gstin" placeholder="29ABCDE1234F1Z5" maxLength={15} /></Field>
               </div>
               <button className="btn h-11 w-full">Create account</button>
@@ -106,7 +108,7 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
               <input type="hidden" name="next" value={next} />
               <div>
                 <h2 className="text-2xl font-semibold tracking-tight">Welcome back</h2>
-                <p className="mt-1.5 text-sm text-muted">Pick up your deals where you left them.</p>
+                <p className="mt-1.5 text-sm text-muted">Your deals are where you left them.</p>
               </div>
               <Field label="Email"><input className="input" name="email" type="email" placeholder="you@example.com" autoComplete="email" required autoFocus /></Field>
               <Field label="Password"><input className="input" name="password" type="password" placeholder="Password" autoComplete="current-password" required /></Field>
@@ -116,6 +118,7 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
               </p>
             </form>
           )}
+          </Enter>
         </div>
       </section>
     </div>

@@ -2,18 +2,55 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { db, type Deal } from "@/lib/db";
+import { Stagger, StaggerItem } from "@/components/motion";
 import { ScoreChip } from "../score-chip";
 import { SeedButton } from "../seed-button";
 
-const day = (t: number) => new Date(t).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+const inr = (paise: number) => "₹" + (paise / 100).toLocaleString("en-IN");
+
+const SHORT: Record<string, string> = {
+  AGREED: "not funded",
+  FUNDING: "confirming",
+  FUNDED: "held",
+  SUBMITTED: "in review",
+  RELEASING: "paying out",
+  RELEASED: "paid",
+  REFUNDING: "refunding",
+  REFUNDED: "refunded",
+  DISPUTED: "disputed",
+};
+const ORDER = Object.keys(SHORT);
+
+type Row = Deal & { total: number; states: string };
+
+function summary(states: string) {
+  const counts = new Map<string, number>();
+  for (const s of states.split(",")) counts.set(s, (counts.get(s) ?? 0) + 1);
+  return [...counts]
+    .sort(([a], [b]) => ORDER.indexOf(a) - ORDER.indexOf(b))
+    .map(([s, n]) => ({ s, text: `${n} ${SHORT[s] ?? s.toLowerCase()}` }));
+}
+
+const TONE: Record<string, string> = {
+  FUNDED: "text-emerald-700",
+  SUBMITTED: "text-amber-700",
+  RELEASED: "text-ink-2",
+  DISPUTED: "text-rose-700",
+  REFUNDED: "text-rose-700",
+};
+
+const withMilestones = `select d.*, sum(m.amount) as total, group_concat(m.state) as states
+  from deals d join milestones m on m.deal_id = d.id`;
 
 export default async function Dashboard() {
   const u = await currentUser();
   if (!u) redirect("/login");
   const deals = db
-    .prepare(`select * from deals where freelancer_id = ? or client_id = ? order by created_at desc`)
-    .all(u.id, u.id) as Deal[];
-  const open = db.prepare(`select * from deals where client_id is null and freelancer_id != ? order by created_at desc limit 5`).all(u.id) as Deal[];
+    .prepare(`${withMilestones} where d.freelancer_id = ? or d.client_id = ? group by d.id order by d.created_at desc`)
+    .all(u.id, u.id) as Row[];
+  const open = db
+    .prepare(`${withMilestones} where d.client_id is null and d.freelancer_id != ? group by d.id order by d.created_at desc limit 5`)
+    .all(u.id) as Row[];
 
   return (
     <div>
@@ -21,56 +58,72 @@ export default async function Dashboard() {
         <ScoreChip userId={u.id} name={u.name} role="Your score" size="lg" />
         <div className="flex flex-wrap items-center gap-3">
           <SeedButton />
-          <Link href="/new" className="btn">New protected deal</Link>
+          <Link href="/new" className="btn">New deal</Link>
         </div>
       </header>
 
       <section className="section">
-        <DealList
-          title="Your deals"
-          empty="No deals yet. Create one and send the link to your client on WhatsApp."
-          deals={deals}
-          role={(d) => (d.freelancer_id === u.id ? "You're the freelancer" : "You're the client")}
-        />
+        <ListHead title="Your deals" count={deals.length} />
+        {deals.length ? (
+          <DealList deals={deals} role={(d) => (d.freelancer_id === u.id ? "You're the freelancer" : "You're the client")} />
+        ) : (
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-6 border-y border-line py-8">
+            <p className="max-w-md text-ink-2">No deals yet. Create one and send the link to your client on WhatsApp.</p>
+            <Link href="/new" className="btn h-11 px-5">New deal</Link>
+          </div>
+        )}
       </section>
 
       {open.length ? (
         <section className="section">
-          <DealList title="Open links waiting for a client" deals={open} role={() => "Shared with you"} />
+          <ListHead title="Open links waiting for a client" count={open.length} />
+          <DealList deals={open} role={() => "No client yet"} />
         </section>
       ) : null}
     </div>
   );
 }
 
-function DealList({ title, deals, role, empty }: { title: string; deals: Deal[]; role: (d: Deal) => string; empty?: string }) {
+function ListHead({ title, count }: { title: string; count: number }) {
   return (
-    <>
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-        <span className="text-[13px] text-muted tabular-nums">{deals.length}</span>
-      </div>
-      {deals.length === 0 && empty ? <p className="mt-4 max-w-prose text-ink-2">{empty}</p> : null}
-      {deals.length ? (
-        <ul className="mt-6 border-t border-line">
-          {deals.map((d) => (
-            <li key={d.id} className="border-b border-line">
-              <Link
-                href={`/d/${d.slug}`}
-                prefetch={true}
-                className="group -mx-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-1 rounded-sm px-3 py-4 transition-colors hover:bg-wash"
-              >
-                <span className="font-medium text-ink">{d.title}</span>
-                <span className="flex items-center gap-4 text-[13px] text-muted">
-                  <span>{role(d)}</span>
-                  <span className="tabular-nums text-faint">{day(d.created_at)}</span>
-                  <span aria-hidden className="text-faint transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-700">→</span>
+    <div className="flex items-baseline justify-between gap-4">
+      <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+      <span className="text-[13px] text-muted tabular-nums">{count}</span>
+    </div>
+  );
+}
+
+function DealList({ deals, role }: { deals: Row[]; role: (d: Row) => string }) {
+  return (
+    <Stagger as="ul" className="mt-6 border-t border-line">
+      {deals.map((d) => (
+        <StaggerItem as="li" key={d.id} className="border-b border-line">
+          <Link
+            href={`/d/${d.slug}`}
+            prefetch={true}
+            className="group -mx-3 grid grid-cols-[1fr_auto] items-center gap-x-6 gap-y-1.5 rounded-sm px-3 py-4 transition-colors hover:bg-wash"
+          >
+            <span className="min-w-0">
+              <span className="block truncate font-medium text-ink">{d.title}</span>
+              <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
+                <span className="chip-zinc">{role(d)}</span>
+                <span className="tabular-nums">
+                  {summary(d.states).map((p, i) => (
+                    <span key={p.s}>
+                      {i ? <span className="text-faint"> · </span> : null}
+                      <span className={TONE[p.s] ?? ""}>{p.text}</span>
+                    </span>
+                  ))}
                 </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </>
+              </span>
+            </span>
+            <span className="flex items-center gap-4">
+              <span className="font-semibold text-ink tabular-nums">{inr(d.total)}</span>
+              <span aria-hidden className="text-faint transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-700">→</span>
+            </span>
+          </Link>
+        </StaggerItem>
+      ))}
+    </Stagger>
   );
 }

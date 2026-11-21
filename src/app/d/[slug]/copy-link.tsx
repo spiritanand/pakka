@@ -12,7 +12,7 @@ export function CopyLink() {
         setDone(true);
       }}
     >
-      {done ? "Copied — paste it in WhatsApp" : "Copy Pakka link"}
+      {done ? "Copied. Paste it in WhatsApp." : "Copy Pakka link"}
     </button>
   );
 }

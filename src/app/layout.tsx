@@ -10,8 +10,8 @@ const plexSans = IBM_Plex_Sans({ variable: "--font-plex-sans", subsets: ["latin"
 const plexMono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"], weight: ["400", "500"] });
 
 export const metadata: Metadata = {
-  title: "Pakka — pay links that hold until the work lands",
-  description: "Milestone payments held on Razorpay, and a 0–1000 trust score both sides carry.",
+  title: "Pakka · Money held by Razorpay until the work is done",
+  description: "Your client pays up front, Razorpay holds it, and you're paid when you deliver. Every finished deal builds a 0–1000 trust score.",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -48,7 +48,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 <Link href="/login?mode=signin" className="rounded-md px-2.5 py-1.5 text-ink-2 transition-colors hover:bg-wash hover:text-ink">
                   Sign in
                 </Link>
-                <Link href="/login" className="btn btn-sm">Get started</Link>
+                <Link href="/login" className="btn btn-sm">Create a Pakka link</Link>
               </nav>
             )}
           </div>
@@ -58,9 +58,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <div className="rails flex flex-wrap items-center justify-between gap-3 py-6 text-[13px] text-muted">
             <span>
               <span className="font-semibold text-ink">pakka<span className="text-emerald-600">.</span></span>
-              <span className="ml-2">Money held on Razorpay until the work lands.</span>
+              <span className="ml-2">Money held by Razorpay until the work is done.</span>
             </span>
-            <span>Your score leaves with your PAN.</span>
+            <span>Your score follows your PAN.</span>
           </div>
         </footer>
         </MotionProvider>
