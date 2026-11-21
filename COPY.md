@@ -86,8 +86,8 @@ Deal mock:
 - Lede, paying: `Every freelancer has one, built from real payments. Miss a deadline and it drops 300. So does anyone who vouched for them, by 150.`
 - Cascade rows: `Rohan` / `Missed the deadline` / 323 to 23 (−300) · `Priya` / `Vouched for Rohan` / 695 to 545 (−150)
 - Below a hairline, left: `Check anyone before you pay` / `One request, no login. You get the score, how it was built, and who vouched.`
-- Right: dark terminal, `GET /api/trust`, `live response`, copy button `Copy curl` (copies `curl https://pakka.zwala.dev/api/trust/CHVPP4321L`), command `curl pakka.zwala.dev/api/trust/CHVPP4321L` and Priya's live JSON.
-- Under it, muted: link `For AI agents` (goes to `/machine`) + mono `curl -H "Accept: text/markdown" pakka.zwala.dev`
+- Right: dark terminal, `GET /api/trust`, `live response`, copy button `Copy curl` (copies `curl https://pakka.zwala.dev/api/trust/CHVPP4321L`), command `curl https://pakka.zwala.dev/api/trust/CHVPP4321L` and Priya's live JSON.
+- Under it, muted: link `For AI agents` (goes to `/machine`) + mono `curl -H "Accept: text/markdown" https://pakka.zwala.dev`
 
 ### 5. Final CTA
 

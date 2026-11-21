@@ -216,7 +216,7 @@ export function Landing({ audience, demoHref }: { audience: Audience; demoHref?:
               <Link href="/machine" className="link text-muted">
                 For AI agents
               </Link>
-              <code className="font-mono text-xs break-all">curl -H &quot;Accept: text/markdown&quot; pakka.zwala.dev</code>
+              <code className="font-mono text-xs break-all">curl -H &quot;Accept: text/markdown&quot; https://pakka.zwala.dev</code>
             </p>
           </div>
         </div>

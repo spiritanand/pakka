@@ -52,7 +52,7 @@ export async function ApiDemo() {
     : FALLBACK;
   return (
     <Terminal
-      command={`curl pakka.zwala.dev/api/trust/${DEMO_PAN}`}
+      command={`curl https://pakka.zwala.dev/api/trust/${DEMO_PAN}`}
       copy={`curl https://pakka.zwala.dev/api/trust/${DEMO_PAN}`}
       lines={tokenize(compactJson(body))}
       live={!!live}

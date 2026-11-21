@@ -20,7 +20,7 @@ export default async function MachinePage() {
           <a href="/llms.txt" target="_blank" rel="noopener noreferrer" className="rounded-md bg-white/[0.06] px-2.5 py-1 text-white/80 ring-1 ring-white/10 hover:bg-white/10">/llms.txt</a>
           <CopyButton value={markdown} label="Copy markdown" variant="dark" />
           <span className="text-white/35">
-            or <code className="text-emerald-300">curl -H &quot;Accept: text/markdown&quot; pakka.zwala.dev</code>
+            or <code className="text-emerald-300">curl -H &quot;Accept: text/markdown&quot; https://pakka.zwala.dev</code>
           </span>
         </nav>
         <Markdown source={markdown} />
