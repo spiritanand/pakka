@@ -50,14 +50,24 @@ export async function startFunding(milestoneId: string, clientId: string, appUrl
   const deal = dealOf(m);
   if (deal.freelancer_id === clientId) throw new Error("You can't fund your own deal");
   if (deal.client_id && deal.client_id !== clientId) throw new Error("Another client owns this deal");
-  db.prepare(`update deals set client_id = ? where id = ?`).run(clientId, deal.id);
+  if (m.link_id) {
+    const old = await rzp.getPaymentLink(m.link_id);
+    if (old.status === "paid") {
+      await confirmFunding(m.id);
+      return `${appUrl}/d/${deal.slug}`;
+    }
+    if (old.status === "created" || old.status === "partially_paid") {
+      if (m.funder_id === clientId) return old.short_url;
+      await rzp.cancelPaymentLink(m.link_id).catch(() => {});
+    }
+  }
   const link = await rzp.createPaymentLink({
     amount: m.amount,
     description: `Pakka · ${deal.title} · ${m.title}`.slice(0, 2048),
     reference_id: `${m.id}-${Date.now()}`.slice(0, 40),
     callback_url: `${appUrl}/api/rzp/callback?m=${m.id}`,
   });
-  db.prepare(`update milestones set link_id = ? where id = ?`).run(link.id, m.id);
+  db.prepare(`update milestones set link_id = ?, funder_id = ? where id = ?`).run(link.id, clientId, m.id);
   return link.short_url;
 }
 
@@ -68,7 +78,22 @@ export async function confirmFunding(milestoneId: string) {
   const link = await rzp.getPaymentLink(m.link_id);
   const paid = link.payments?.find((p) => p.status === "captured");
   if (link.status !== "paid" || !paid) throw new Error(`Payment link status: ${link.status}`);
+  const funder = m.funder_id ?? dealOf(m).client_id;
+  if (!funder) throw new Error("No funder recorded for milestone");
   if (!claim(m.id, "AGREED", "FUNDING")) return dealOf(m).slug;
+  const bound = db
+    .prepare(`update deals set client_id = ? where id = ? and (client_id is null or client_id = ?)`)
+    .run(funder, m.deal_id, funder).changes;
+  if (!bound) {
+    try {
+      await rzp.refund(paid.payment_id, m.amount);
+    } catch (e) {
+      db.prepare(`update milestones set state = 'AGREED' where id = ?`).run(m.id);
+      throw e;
+    }
+    db.prepare(`update milestones set state = 'AGREED', link_id = null, funder_id = null where id = ?`).run(m.id);
+    throw new Error("Another client already funded this deal, so this payment was refunded");
+  }
   try {
     const t = await rzp.holdTransfer(paid.payment_id, m.amount, { milestone: m.id });
     const transferId = t.items[0].id;
@@ -182,12 +207,29 @@ export function reject(milestoneId: string, userId: string, failed: number[]) {
   ).run(next, JSON.stringify(failed), Date.now() + 48 * HOUR, m.id);
 }
 
-export async function fastForward(milestoneId: string) {
+export async function fastForward(milestoneId: string, userId: string) {
   const past = Date.now() - 1000;
-  const m = getMilestone(milestoneId)!;
+  const m = getMilestone(milestoneId);
+  if (!m) throw new Error("Milestone not found");
+  const deal = dealOf(m);
+  if (userId !== deal.client_id && userId !== deal.freelancer_id) throw new Error("Only the client or freelancer can do this");
   if (m.state === "FUNDED") db.prepare(`update milestones set due_at = ? where id = ?`).run(past, m.id);
   if (m.state === "SUBMITTED") db.prepare(`update milestones set review_due_at = ? where id = ?`).run(past, m.id);
   await tick(getMilestone(milestoneId)!);
+}
+
+export async function tickDue() {
+  const now = Date.now();
+  const due = db
+    .prepare(
+      `select * from milestones
+       where ((state = 'FUNDED' and due_at < ?) or (state = 'SUBMITTED' and review_due_at < ?))
+         and payment_id not like 'pay_seed%'`,
+    )
+    .all(now, now) as Milestone[];
+  let settled = 0;
+  for (const m of due) await tick(m).then(() => settled++, (e) => console.error("tick", m.id, e));
+  return { due: due.length, settled };
 }
 
 async function tick(m: Milestone) {

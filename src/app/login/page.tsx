@@ -4,6 +4,8 @@ import { currentUser } from "@/lib/auth";
 import { signIn, signUp } from "../actions";
 import { SeedButton } from "../seed-button";
 import { Enter } from "@/components/motion";
+import { SubmitButton } from "@/components/submit-button";
+import { safeNext } from "../format";
 
 const PERSONAS = [
   ["meera", "Meera · client"],
@@ -12,9 +14,18 @@ const PERSONAS = [
   ["arjun", "Arjun · freelancer"],
 ];
 
+const ERRORS: Record<string, string> = {
+  signin: "That email and password don't match. Try again.",
+  email: "There's already an account with that email. Sign in instead.",
+  pan: "That PAN is already on another account.",
+  phone: "That phone number is already on another account.",
+  signup: "We couldn't create your account. Check the details and try again.",
+};
+
 export default async function Login({ searchParams }: PageProps<"/login">) {
   const sp = await searchParams;
-  const next = String(sp.next ?? "/dashboard");
+  const next = safeNext(sp.next);
+  const error = typeof sp.error === "string" ? ERRORS[sp.error] : undefined;
   const mode = sp.mode === "signin" ? "signin" : "signup";
   const href = (m: string) => `/login?mode=${m}${sp.next ? `&next=${encodeURIComponent(next)}` : ""}`;
   if (await currentUser()) redirect(next);
@@ -35,7 +46,7 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
                 <input type="hidden" name="email" value={`${k}@pakka.demo`} />
                 <input type="hidden" name="password" value="pakka1234" />
                 <input type="hidden" name="next" value={next} />
-                <button className="btn-ghost w-full">{label}</button>
+                <SubmitButton className="btn-ghost w-full">{label}</SubmitButton>
               </form>
             ))}
           </div>
@@ -47,13 +58,12 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
 
       <section className="border-t border-line pt-10 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-14">
         <div className="max-w-md">
-          <div role="tablist" className="inline-flex rounded-lg border border-line bg-wash p-1 text-sm">
+          <nav aria-label="Account" className="inline-flex rounded-lg border border-line bg-wash p-1 text-sm">
             {[["signup", "Create account"], ["signin", "Sign in"]].map(([m, label]) => (
               <Link
                 key={m}
                 href={href(m)}
-                role="tab"
-                aria-selected={mode === m}
+                aria-current={mode === m ? "page" : undefined}
                 className={`rounded-md px-4 py-1.5 font-medium transition-colors ${
                   mode === m ? "bg-paper text-ink shadow-[0_1px_2px_rgba(0,0,0,0.06)]" : "text-muted hover:text-ink"
                 }`}
@@ -61,7 +71,7 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
                 {label}
               </Link>
             ))}
-          </div>
+          </nav>
 
           <Enter key={mode} y={6}>
           {mode === "signup" ? (
@@ -81,7 +91,8 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
                 <Field label="PAN (optional)"><input className="input uppercase" name="pan" placeholder="ABCDE1234F" maxLength={10} /></Field>
                 <Field label="GSTIN (optional)"><input className="input uppercase" name="gstin" placeholder="29ABCDE1234F1Z5" maxLength={15} /></Field>
               </div>
-              <button className="btn h-11 w-full">Create account</button>
+              {error ? <p role="alert" className="text-sm text-rose-700">{error}</p> : null}
+              <SubmitButton className="btn h-11 w-full" busy="Creating account…">Create account</SubmitButton>
               <p className="text-center text-sm text-muted">
                 Already have an account? <Link href={href("signin")} className="link">Sign in</Link>
               </p>
@@ -95,7 +106,8 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
               </div>
               <Field label="Email"><input className="input" name="email" type="email" placeholder="you@example.com" autoComplete="email" required autoFocus /></Field>
               <Field label="Password"><input className="input" name="password" type="password" placeholder="Password" autoComplete="current-password" required /></Field>
-              <button className="btn h-11 w-full">Sign in</button>
+              {error ? <p role="alert" className="text-sm text-rose-700">{error}</p> : null}
+              <SubmitButton className="btn h-11 w-full" busy="Signing in…">Sign in</SubmitButton>
               <p className="text-center text-sm text-muted">
                 New to Pakka? <Link href={href("signup")} className="link">Create an account</Link>
               </p>

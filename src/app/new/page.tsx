@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { createDeal } from "../actions";
+import { SubmitButton } from "@/components/submit-button";
 
 export default async function NewDeal() {
   if (!(await currentUser())) redirect("/");
@@ -27,7 +28,7 @@ export default async function NewDeal() {
       {[0, 1].map((i) => (
         <section key={i} className="section grid gap-6 md:grid-cols-[14rem_1fr] md:gap-12">
           <div>
-            <div className="font-mono text-sm text-faint tabular-nums">0{i + 1}</div>
+            <div className="font-mono text-sm text-muted tabular-nums">0{i + 1}</div>
             <h2 className={`mt-1 font-semibold ${i ? "text-ink-2" : ""}`}>
               Milestone {i + 1}
               {i ? <span className="font-normal text-muted"> (optional)</span> : null}
@@ -69,7 +70,7 @@ export default async function NewDeal() {
 
       <section className="section flex flex-wrap items-center justify-between gap-4">
         <p className="text-[13px] text-muted">Your client pays nothing until they fund a milestone.</p>
-        <button className="btn h-11 px-5">Create Pakka link</button>
+        <SubmitButton className="btn h-11 px-5" busy="Creating…">Create Pakka link</SubmitButton>
       </section>
     </form>
   );

@@ -116,7 +116,6 @@ function DealList({ deals, role, meta }: { deals: Row[]; role: (d: Row) => strin
         <StaggerItem as="li" key={d.id} className="border-b border-line">
           <Link
             href={`/d/${d.slug}`}
-            prefetch={true}
             className="group -mx-3 grid grid-cols-[1fr_auto] items-center gap-x-6 gap-y-1.5 rounded-sm px-3 py-4 transition-colors hover:bg-wash"
           >
             <span className="min-w-0">

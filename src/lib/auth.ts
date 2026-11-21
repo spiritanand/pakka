@@ -14,6 +14,15 @@ export const authOptions = {
       gstin: { type: "string", required: false },
     },
   },
+  disabledPaths: [
+    "/sign-up/email",
+    "/update-user",
+    "/change-password",
+    "/change-email",
+    "/delete-user",
+    "/revoke-sessions",
+    "/revoke-other-sessions",
+  ],
   plugins: [nextCookies()],
 } satisfies Parameters<typeof betterAuth>[0];
 

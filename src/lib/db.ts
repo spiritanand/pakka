@@ -55,6 +55,10 @@ create table if not exists vouches (
 );
 `);
 
+if (!(db.prepare(`pragma table_info(milestones)`).all() as { name: string }[]).some((c) => c.name === "funder_id")) {
+  db.exec(`alter table milestones add column funder_id text`);
+}
+
 export type Deal = {
   id: string; slug: string; title: string; freelancer_id: string; client_id: string | null; created_at: number;
 };
@@ -62,7 +66,7 @@ export type Milestone = {
   id: string; deal_id: string; idx: number; title: string; amount: number; checklist: string;
   due_at: number; review_due_at: number | null; state: MilestoneState; round: number; outcome: string | null;
   evidence_url: string | null; evidence_ticks: string | null; rejected_items: string | null;
-  link_id: string | null; payment_id: string | null; transfer_id: string | null; refund_id: string | null;
+  link_id: string | null; funder_id: string | null; payment_id: string | null; transfer_id: string | null; refund_id: string | null;
 };
 export type MilestoneState = "AGREED" | "FUNDED" | "SUBMITTED" | "RELEASED" | "REFUNDED" | "DISPUTED";
 export type EventRow = {

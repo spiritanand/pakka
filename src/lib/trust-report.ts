@@ -3,8 +3,8 @@ import { trustScore } from "./score";
 
 export function trustReport(key: string, recentLimit = 10) {
   const u = db
-    .prepare(`select id, name, pan from user where id = ? or upper(pan) = upper(?) or lower(email) = lower(?) or phone = ?`)
-    .get(key, key, key, key) as { id: string; name: string; pan: string | null } | undefined;
+    .prepare(`select id, name, pan from user where id = ? or (length(?) = 10 and upper(pan) = upper(?))`)
+    .get(key, key, key) as { id: string; name: string; pan: string | null } | undefined;
   if (!u) return null;
   const t = trustScore(u.id);
   const recent = db

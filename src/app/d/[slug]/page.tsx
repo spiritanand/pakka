@@ -9,6 +9,7 @@ import { CopyLink } from "./copy-link";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { Disclosure, StatusChip } from "./deal-motion";
 import { day, firstName as first, inr, when } from "../../format";
+import { SubmitButton } from "@/components/submit-button";
 
 type Viewer = "client" | "freelancer" | "other";
 type Names = { freelancer: string; client: string };
@@ -75,8 +76,9 @@ const EVENT_DOT: Record<string, string> = {
   REFUNDED: "bg-rose-600",
 };
 
-export default async function DealPage({ params }: PageProps<"/d/[slug]">) {
+export default async function DealPage({ params, searchParams }: PageProps<"/d/[slug]">) {
   const { slug } = await params;
+  const fundingPending = (await searchParams).funding === "pending";
   const deal = getDealBySlug(slug);
   if (!deal) notFound();
   const me = await currentUser();
@@ -109,6 +111,12 @@ export default async function DealPage({ params }: PageProps<"/d/[slug]">) {
         </div>
         <CopyLink />
       </header>
+
+      {fundingPending && nextToFund ? (
+        <p role="status" className="hairline bg-amber-50 py-4 text-sm text-amber-900">
+          We couldn't confirm your payment yet. If you paid, press Fund again in a minute. You won't be charged twice.
+        </p>
+      ) : null}
 
       <section className="hairline grid sm:grid-cols-2">
         <div className="py-8 sm:pr-10">
@@ -154,7 +162,7 @@ export default async function DealPage({ params }: PageProps<"/d/[slug]">) {
                   <span className="font-semibold text-ink">{e.name}</span> {EVENT_TEXT[e.type]} ·{" "}
                   <span className="font-medium text-ink tabular-nums">{inr(e.amount)}</span>
                 </div>
-                <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-faint tabular-nums">
+                <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-muted tabular-nums">
                   <span>{when(e.created_at)}</span>
                   {e.ref ? <span className="font-mono">{e.ref}</span> : null}
                 </div>
@@ -193,13 +201,13 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
   const needsSignIn = m.state === "AGREED" && !signedIn;
   const canSubmit = m.state === "FUNDED" && isFreelancer;
   const canReview = m.state === "SUBMITTED" && isClient;
-  const canForward = (m.state === "FUNDED" || m.state === "SUBMITTED") && signedIn;
+  const canForward = (m.state === "FUNDED" || m.state === "SUBMITTED") && (isClient || isFreelancer);
   const hoursLeft = m.review_due_at ? Math.max(0, Math.ceil((m.review_due_at - Date.now()) / 3_600_000)) : 0;
 
   return (
     <StaggerItem as="section" className="section">
       <div className="grid grid-cols-[1.25rem_1fr] items-baseline gap-x-5 gap-y-3 sm:grid-cols-[1.25rem_1fr_auto]">
-        <span className="font-mono text-sm text-faint tabular-nums">{String(m.idx + 1).padStart(2, "0")}</span>
+        <span className="font-mono text-sm text-muted tabular-nums">{String(m.idx + 1).padStart(2, "0")}</span>
         <div className="min-w-0">
           <h2 className="text-xl font-semibold tracking-tight text-balance sm:text-2xl">{m.title}</h2>
           {m.round > 1 ? <div className="mt-1 text-[13px] text-muted">Revision {m.round - 1}</div> : null}
@@ -233,7 +241,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
               <span className="label block">Where's the work?</span>
               <input className="input" name="url" placeholder="Link to the work (staging URL, Figma, Drive…)" required />
             </label>
-            <button className="btn h-11 px-5">Mark delivered</button>
+            <SubmitButton className="btn h-11 px-5" busy="Mark delivered · sending…">Mark delivered</SubmitButton>
           </form>
         ) : (
           <div>
@@ -283,7 +291,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
           {note ? <p className={sentBack ? "text-rose-700" : "text-ink-2"}>{note}</p> : null}
           {m.outcome && OUTCOME[m.outcome] ? <p className="font-medium text-ink">{OUTCOME[m.outcome][viewer](names)}</p> : null}
           {m.transfer_id || m.refund_id ? (
-            <div className="space-y-0.5 font-mono text-[11px] text-faint">
+            <div className="space-y-0.5 font-mono text-[11px] text-muted">
               {m.transfer_id ? <div>Razorpay ref {m.transfer_id}</div> : null}
               {m.refund_id ? <div>Refund ref {m.refund_id}</div> : null}
             </div>
@@ -298,7 +306,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
           {canFund ? (
             <form action={fund}>
               <input type="hidden" name="m" value={m.id} />
-              <button className={fundClass}>Fund {inr(m.amount)} · held until delivered</button>
+              <SubmitButton className={fundClass} busy={`Fund ${inr(m.amount)} · opening Razorpay…`}>Fund {inr(m.amount)} · held until delivered</SubmitButton>
             </form>
           ) : null}
           {needsSignIn ? <Link href={`/login?next=/d/${slug}`} className={fundClass}>Sign in to fund</Link> : null}
@@ -308,7 +316,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
               <form action={accept}>
                 <input type="hidden" name="m" value={m.id} />
                 <input type="hidden" name="slug" value={slug} />
-                <button className="btn h-11 px-5">Accept and pay {names.freelancer} {inr(m.amount)}</button>
+                <SubmitButton className="btn h-11 px-5" busy="Paying out…">Accept and pay {names.freelancer} {inr(m.amount)}</SubmitButton>
               </form>
               <Disclosure label="Something missing? Send it back.">
                 <form action={reject} className="space-y-4 text-sm">
@@ -322,7 +330,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
                     ))}
                   </div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                    <button className="btn-ghost">Send back for fixes</button>
+                    <SubmitButton className="btn-ghost" busy="Sending back…">Send back for fixes</SubmitButton>
                     <p className="text-xs text-muted">The freelancer gets 48 hours to fix it. Sending it back twice marks it disputed.</p>
                   </div>
                 </form>
@@ -336,9 +344,9 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
             <form action={fastForward} className={canFund || needsSignIn || canReview ? "mt-6" : ""}>
               <input type="hidden" name="m" value={m.id} />
               <input type="hidden" name="slug" value={slug} />
-              <button className="inline-flex h-8 items-center gap-1.5 rounded-md border border-dashed border-line-strong bg-paper px-3 text-xs text-muted transition-colors hover:border-ink/40 hover:text-ink">
+              <SubmitButton className="inline-flex h-8 items-center gap-1.5 rounded-md border border-dashed border-line-strong bg-paper px-3 text-xs text-muted transition-colors hover:border-ink/40 hover:text-ink disabled:opacity-60">
                 Demo: fast-forward {m.state === "FUNDED" ? "past deadline" : "72h of client silence"}
-              </button>
+              </SubmitButton>
             </form>
           ) : null}
         </div>
@@ -362,7 +370,7 @@ function ScoreChanges({ milestoneId }: { milestoneId: string }) {
           const d = c.after - c.before;
           return (
             <StaggerItem as="li" key={c.id} className="bg-wash px-(--rail-pad) py-8 sm:last:odd:col-span-2">
-              <Link href={`/u/${c.user_id}`} prefetch={true} className="link font-semibold">{c.name}</Link>
+              <Link href={`/u/${c.user_id}`} className="link font-semibold">{c.name}</Link>
               <p className="mt-1 text-sm text-muted">{c.reason}</p>
               <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-2">
                 <span className="text-2xl font-medium text-faint tabular-nums">{c.before}</span>

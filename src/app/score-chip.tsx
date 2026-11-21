@@ -14,35 +14,43 @@ export function StableNumber({ from, to, className = "", duration = 0.6 }: { fro
   const widest = String(from).length > String(to).length ? from : to;
   return (
     <span className={`relative inline-block tabular-nums ${className}`}>
+      <span className="sr-only">{to}</span>
       <span aria-hidden className="invisible">{widest}</span>
-      <SpringNumber from={from} to={to} duration={duration} className="absolute inset-0 text-right" />
+      <span aria-hidden>
+        <SpringNumber from={from} to={to} duration={duration} className="absolute inset-0 text-right" />
+      </span>
     </span>
   );
 }
 
-export function ScoreChip({ userId, name, role, size = "md" }: { userId: string; name: string; role?: string; size?: "md" | "lg" }) {
+export function ScoreChip({ userId, name, role, size = "md", link = true }: {
+  userId: string; name: string; role?: string; size?: "md" | "lg"; link?: boolean;
+}) {
   const t = trustScore(userId);
   const lg = size === "lg";
-  return (
-    <Link href={`/u/${userId}`} prefetch={true} className="group inline-flex items-center gap-5 rounded-md">
+  const Name = lg ? "h1" : "span";
+  const body = (
+    <>
       <span className="flex items-baseline gap-1">
         <span className={`font-semibold tracking-[-0.04em] text-ink tabular-nums ${lg ? "text-6xl sm:text-7xl" : "text-5xl"}`}>
           {lg ? <StableNumber from={Math.max(0, t.score - 40)} to={t.score} /> : t.score}
         </span>
-        <span className="text-xs text-faint tabular-nums">/1000</span>
+        <span className="text-xs text-muted tabular-nums">/1000</span>
       </span>
       <span className="flex min-w-0 flex-col gap-1.5 leading-tight">
         <span className="flex items-center gap-2 text-[13px] text-muted">
           {role ?? "Pakka score"}
           <span className={TONE[t.band]}><span className="dot" />{t.band}</span>
         </span>
-        <span className={`font-semibold text-ink underline decoration-transparent underline-offset-4 transition-colors group-hover:decoration-emerald-600 ${lg ? "text-xl" : "text-base"}`}>
+        <Name className={`font-semibold text-ink underline decoration-transparent underline-offset-4 transition-colors group-hover:decoration-emerald-600 ${lg ? "text-xl" : "text-base"}`}>
           {firstName(name)}
-        </span>
+        </Name>
         <span className="text-xs text-muted tabular-nums">
           {t.stats.delivered} done · {t.stats.ghosted} ghosted · {t.vouchers.length} vouch{t.vouchers.length === 1 ? "" : "es"}
         </span>
       </span>
-    </Link>
+    </>
   );
+  const cls = "group inline-flex items-center gap-5 rounded-md";
+  return link ? <Link href={`/u/${userId}`} className={cls}>{body}</Link> : <div className={cls}>{body}</div>;
 }

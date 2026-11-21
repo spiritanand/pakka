@@ -2,14 +2,15 @@
 
 import { useId, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
-import { spring } from "@/components/motion";
+import { spring, useAnimateIn } from "@/components/motion";
 
 export function StatusChip({ state, tone, children }: { state: string; tone: string; children: ReactNode }) {
+  const animateIn = useAnimateIn();
   return (
     <motion.span
       key={state}
       className={tone}
-      initial={{ opacity: 0, scale: 0.92 }}
+      initial={animateIn ? { opacity: 0, scale: 0.92 } : false}
       animate={{ opacity: 1, scale: 1 }}
       transition={spring.settle}
     >

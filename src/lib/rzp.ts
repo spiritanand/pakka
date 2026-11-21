@@ -32,6 +32,7 @@ export const rzp = {
   createPaymentLink: (p: { amount: number; description: string; reference_id: string; callback_url: string }) =>
     call<PaymentLink>("POST", "/payment_links", { ...p, currency: "INR", callback_method: "get", reminder_enable: false }),
   getPaymentLink: (id: string) => call<PaymentLink>("GET", `/payment_links/${id}`),
+  cancelPaymentLink: (id: string) => call<PaymentLink>("POST", `/payment_links/${id}/cancel`),
   holdTransfer: (paymentId: string, amount: number, notes: Record<string, string>) =>
     call<{ items: Transfer[] }>("POST", `/payments/${paymentId}/transfers`, {
       transfers: [{ account: linkedAccount(), amount, currency: "INR", on_hold: true, notes }],

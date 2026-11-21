@@ -15,7 +15,12 @@ const CLIENTS = ["Kavya", "Nikhil", "Sana", "Imran", "Divya", "Farhan", "Leela"]
 
 const DAY = 86400_000;
 
-export async function POST() {
+export async function POST(req: Request) {
+  const secret = process.env.SEED_SECRET;
+  const ok = secret
+    ? req.headers.get("x-seed-secret") === secret
+    : process.env.NODE_ENV !== "production" && req.headers.get("x-seed") === "1";
+  if (!ok) return NextResponse.json({ error: "not found" }, { status: 404 });
   await ensureMigrated();
   db.exec(`delete from events; delete from vouches; delete from score_changes; delete from milestones; delete from deals;
            delete from session; delete from account; delete from verification; delete from user;`);

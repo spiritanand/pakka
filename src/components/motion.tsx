@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import {
   MotionConfig,
   motion,
@@ -27,6 +27,10 @@ type BaseProps = Omit<HTMLMotionProps<"div">, "initial" | "animate" | "whileInVi
   y?: number;
 };
 
+const noop = () => () => {};
+// False while hydrating SSR HTML, so first paint is never opacity:0; true for client-only mounts.
+export const useAnimateIn = () => useSyncExternalStore(noop, () => true, () => false);
+
 export function MotionProvider({ children }: { children: ReactNode }) {
   return (
     <MotionConfig reducedMotion="user" transition={spring.soft}>
@@ -37,7 +41,8 @@ export function MotionProvider({ children }: { children: ReactNode }) {
 
 export function Enter({ as = "div", delay = 0, y = 8, ...rest }: BaseProps) {
   const M = tagOf(as);
-  return <M initial={{ opacity: 0, y }} animate={{ opacity: 1, y: 0 }} transition={{ ...spring.soft, delay }} {...rest} />;
+  const animateIn = useAnimateIn();
+  return <M initial={animateIn ? { opacity: 0, y } : false} animate={{ opacity: 1, y: 0 }} transition={{ ...spring.soft, delay }} {...rest} />;
 }
 
 export function Reveal({ as = "div", delay = 0, y = 8, amount = 0.1, ...rest }: BaseProps & { amount?: number }) {
@@ -68,7 +73,8 @@ export function Stagger({
   const M = tagOf(as);
   const variants: Variants = { hidden: {}, show: { transition: { delayChildren: delay, staggerChildren: gap } } };
   const trigger = inView ? { whileInView: "show", viewport: { once: true, amount: 0.2 } } : { animate: "show" };
-  return <M initial="hidden" variants={variants} {...trigger} {...rest} />;
+  const animateIn = useAnimateIn();
+  return <M initial={inView || animateIn ? "hidden" : false} variants={variants} {...trigger} {...rest} />;
 }
 
 export function StaggerItem({ as = "div", ...rest }: Omit<BaseProps, "delay" | "y">) {

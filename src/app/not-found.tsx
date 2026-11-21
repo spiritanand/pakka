@@ -16,7 +16,7 @@ export default async function NotFound() {
       </p>
       <div className="mt-6 flex items-center gap-2 rounded-full border border-line bg-wash px-3 py-1.5 text-[13px] text-ink-2">
         <span className="font-mono tabular-nums text-rose-700">0</span>
-        <span className="text-faint">/1000</span>
+        <span className="text-muted">/1000</span>
         <span className="text-faint">·</span>
         <span>This page&apos;s trust score</span>
       </div>

@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import { auth, currentUser, ensureMigrated } from "@/lib/auth";
 import * as deals from "@/lib/deals";
+import { safeNext } from "./format";
 
 async function me() {
   const u = await currentUser();
@@ -19,25 +20,46 @@ async function appUrl() {
   return `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
 }
 
+function backToLogin(form: FormData, mode: "signup" | "signin", error: string): never {
+  const next = safeNext(form.get("next"));
+  redirect(`/login?mode=${mode}&error=${error}&next=${encodeURIComponent(next)}`);
+}
+
 export async function signUp(form: FormData) {
   await ensureMigrated();
-  await auth.api.signUpEmail({
-    body: {
-      name: String(form.get("name")),
-      email: String(form.get("email")),
-      password: String(form.get("password")),
-      phone: String(form.get("phone") ?? ""),
-      pan: String(form.get("pan") ?? "").toUpperCase(),
-      gstin: String(form.get("gstin") ?? "").toUpperCase(),
-    },
-  });
-  redirect(String(form.get("next") || "/dashboard"));
+  const pan = String(form.get("pan") ?? "").trim().toUpperCase();
+  const phone = String(form.get("phone") ?? "").trim();
+  if (pan && db.prepare(`select 1 from user where upper(pan) = ?`).get(pan)) backToLogin(form, "signup", "pan");
+  if (phone && db.prepare(`select 1 from user where phone = ?`).get(phone)) backToLogin(form, "signup", "phone");
+  let error = "";
+  try {
+    await auth.api.signUpEmail({
+      body: {
+        name: String(form.get("name")),
+        email: String(form.get("email")),
+        password: String(form.get("password")),
+        phone,
+        pan,
+        gstin: String(form.get("gstin") ?? "").trim().toUpperCase(),
+      },
+    });
+  } catch (e) {
+    error = /exist/i.test(String((e as Error)?.message)) ? "email" : "signup";
+  }
+  if (error) backToLogin(form, "signup", error);
+  redirect(safeNext(form.get("next")));
 }
 
 export async function signIn(form: FormData) {
   await ensureMigrated();
-  await auth.api.signInEmail({ body: { email: String(form.get("email")), password: String(form.get("password")) } });
-  redirect(String(form.get("next") || "/dashboard"));
+  let ok = true;
+  try {
+    await auth.api.signInEmail({ body: { email: String(form.get("email")), password: String(form.get("password")) } });
+  } catch {
+    ok = false;
+  }
+  if (!ok) backToLogin(form, "signin", "signin");
+  redirect(safeNext(form.get("next")));
 }
 
 export async function signOut() {
@@ -95,8 +117,8 @@ export async function reject(form: FormData) {
 }
 
 export async function fastForward(form: FormData) {
-  await me();
-  await deals.fastForward(String(form.get("m")));
+  const u = await me();
+  await deals.fastForward(String(form.get("m")), u.id);
   revalidatePath(`/d/${form.get("slug")}`);
 }
 

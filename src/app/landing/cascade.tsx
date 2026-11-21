@@ -23,7 +23,7 @@ export function Cascade() {
                 <span className="ml-2 text-sm text-muted">{c.why}</span>
               </div>
               <div className="shrink-0 text-sm tabular-nums">
-                <span className="text-faint line-through decoration-faint/60">{c.from}</span>
+                <span className="text-muted line-through decoration-faint/60">{c.from}</span>
                 <span className="mx-1.5 text-faint">to</span>
                 <SpringNumber
                   from={c.from}

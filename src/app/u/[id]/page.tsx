@@ -7,6 +7,7 @@ import { vouch } from "../../actions";
 import { ScoreChip } from "../../score-chip";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { day, firstName } from "../../format";
+import { SubmitButton } from "@/components/submit-button";
 
 const OUTCOME: Record<string, [string, string]> = {
   DELIVERED: ["Paid", "chip-emerald"],
@@ -48,10 +49,10 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
   return (
     <div>
       <header className="flex flex-wrap items-end justify-between gap-8 pb-12">
-        <ScoreChip userId={u.id} name={u.name} size="lg" />
+        <ScoreChip userId={u.id} name={u.name} size="lg" link={false} />
         <div className="flex flex-wrap gap-2">
-          {panOk(u.pan) ? <span className="chip-emerald">PAN checked</span> : null}
-          {gstinOk(u.gstin) ? <span className="chip-emerald">GSTIN checked</span> : null}
+          {panOk(u.pan) ? <span className="chip-zinc">PAN on file</span> : null}
+          {gstinOk(u.gstin) ? <span className="chip-zinc">GSTIN on file</span> : null}
         </div>
       </header>
 
@@ -102,7 +103,7 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
                 <input className="input" name="note" placeholder="How do you know their work?" required />
               </label>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                <button className="btn-ink">Vouch with my score</button>
+                <SubmitButton className="btn-ink" busy="Vouching…">Vouch with my score</SubmitButton>
                 <p className="text-xs text-muted">If they miss a deadline after this, you lose 150 points.</p>
               </div>
             </form>
@@ -116,7 +117,7 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
         <Stagger as="ul" inView className="mt-6">
           {events.map((e) => (
             <StaggerItem as="li" key={e.id} className="grid grid-cols-[4rem_1fr_auto] items-baseline gap-4 border-t border-line py-3 text-sm">
-              <span className="text-xs text-faint tabular-nums">{day(e.created_at)}</span>
+              <span className="text-xs text-muted tabular-nums">{day(e.created_at)}</span>
               <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
                 <span className="truncate text-ink">{e.title ?? (e.counterparty ? `Deal with ${firstName(e.counterparty)}` : "Deal")}</span>
                 {OUTCOME[e.type] ? <span className={OUTCOME[e.type][1]}>{OUTCOME[e.type][0]}</span> : null}
@@ -125,7 +126,7 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
             </StaggerItem>
           ))}
         </Stagger>
-        <a href={`/api/trust/${u.id}`} className="mt-10 inline-block text-xs text-faint underline decoration-line-strong underline-offset-4 hover:text-ink">
+        <a href={`/api/trust/${u.id}`} className="mt-10 inline-block text-xs text-muted underline decoration-line-strong underline-offset-4 hover:text-ink">
           This score as JSON
         </a>
       </section>
