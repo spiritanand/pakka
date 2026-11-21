@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
-import { db, logEvent, type Deal, type Milestone } from "./db";
+import { db, logEvent, type Deal, type Milestone, type ScoreChange } from "./db";
 import { rzp } from "./rzp";
+import { trustScore } from "./score";
 
 const HOUR = 3600_000;
 export const REVIEW_WINDOW = 72 * HOUR;
@@ -98,6 +99,38 @@ export function submitWork(milestoneId: string, userId: string, url: string, tic
   if (!ok) throw new Error("Milestone is not open for submission");
 }
 
+function affected(deal: Deal) {
+  const people = new Map<string, string>();
+  people.set(deal.freelancer_id, "freelancer");
+  if (deal.client_id) people.set(deal.client_id, "client");
+  const vouchers = db.prepare(`select voucher_id from vouches where vouchee_id = ?`).all(deal.freelancer_id) as { voucher_id: string }[];
+  for (const { voucher_id } of vouchers) {
+    if (!people.has(voucher_id)) people.set(voucher_id, "vouched for the freelancer");
+    const others = db.prepare(`select vouchee_id from vouches where voucher_id = ?`).all(voucher_id) as { vouchee_id: string }[];
+    for (const { vouchee_id } of others) if (!people.has(vouchee_id)) people.set(vouchee_id, "vouched by a voucher");
+  }
+  return people;
+}
+
+function snapshot(deal: Deal) {
+  const people = affected(deal);
+  const before = new Map([...people.keys()].map((id) => [id, trustScore(id).score]));
+  return (milestoneId: string) => {
+    for (const [id, reason] of people) {
+      const after = trustScore(id).score;
+      db.prepare(
+        `insert into score_changes (milestone_id, user_id, before, after, reason, created_at) values (?, ?, ?, ?, ?, ?)`,
+      ).run(milestoneId, id, before.get(id)!, after, reason, Date.now());
+    }
+  };
+}
+
+export function scoreChanges(milestoneId: string) {
+  return db
+    .prepare(`select s.*, u.name from score_changes s join user u on u.id = s.user_id where milestone_id = ? order by abs(after - before) desc`)
+    .all(milestoneId) as (ScoreChange & { name: string })[];
+}
+
 async function settleRelease(m: Milestone, auto: boolean) {
   const deal = dealOf(m);
   if (!claim(m.id, "SUBMITTED", "RELEASING")) return;
@@ -107,9 +140,11 @@ async function settleRelease(m: Milestone, auto: boolean) {
     db.prepare(`update milestones set state = 'SUBMITTED' where id = ?`).run(m.id);
     throw e;
   }
+  const record = snapshot(deal);
   db.prepare(`update milestones set state = 'RELEASED', outcome = ? where id = ?`).run(auto ? "auto_released" : "accepted", m.id);
   logEvent({ user_id: deal.freelancer_id, type: "DELIVERED", amount: m.amount, counterparty_id: deal.client_id, milestone_id: m.id, ref: m.transfer_id });
   logEvent({ user_id: deal.client_id!, type: auto ? "AUTO_RELEASED" : "ACCEPTED", amount: m.amount, counterparty_id: deal.freelancer_id, milestone_id: m.id, ref: m.transfer_id });
+  record(m.id);
 }
 
 async function settleGhost(m: Milestone) {
@@ -122,9 +157,11 @@ async function settleGhost(m: Milestone) {
     db.prepare(`update milestones set state = 'FUNDED' where id = ?`).run(m.id);
     throw e;
   }
+  const record = snapshot(deal);
   db.prepare(`update milestones set state = 'REFUNDED', outcome = 'ghosted', refund_id = ? where id = ?`).run(refundId, m.id);
   logEvent({ user_id: deal.freelancer_id, type: "GHOSTED", amount: m.amount, counterparty_id: deal.client_id, milestone_id: m.id, ref: refundId });
   logEvent({ user_id: deal.client_id!, type: "REFUNDED", amount: m.amount, counterparty_id: deal.freelancer_id, milestone_id: m.id, ref: refundId });
+  record(m.id);
 }
 
 export async function accept(milestoneId: string, userId: string) {

@@ -85,3 +85,19 @@ export function logEvent(e: Omit<EventRow, "id" | "created_at"> & { created_at?:
 export function getUser(id: string) {
   return db.prepare(`select id, name, email, phone, pan, gstin from user where id = ?`).get(id) as User | undefined;
 }
+
+db.exec(`
+create table if not exists score_changes (
+  id integer primary key autoincrement,
+  milestone_id text not null,
+  user_id text not null,
+  before integer not null,
+  after integer not null,
+  reason text not null,
+  created_at integer not null
+);
+`);
+
+export type ScoreChange = {
+  id: number; milestone_id: string; user_id: string; before: number; after: number; reason: string; created_at: number;
+};

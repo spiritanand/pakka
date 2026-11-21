@@ -11,7 +11,7 @@ export function SeedButton() {
       onClick={async () => {
         setBusy(true);
         await fetch("/api/dev/seed", { method: "POST" });
-        window.location.href = "/";
+        window.location.href = "/login";
       }}
     >
       {busy ? "Resetting…" : "Reset demo data"}

@@ -9,7 +9,7 @@ import * as deals from "@/lib/deals";
 
 async function me() {
   const u = await currentUser();
-  if (!u) redirect("/");
+  if (!u) redirect("/login");
   return u;
 }
 
@@ -31,13 +31,13 @@ export async function signUp(form: FormData) {
       gstin: String(form.get("gstin") ?? "").toUpperCase(),
     },
   });
-  redirect(String(form.get("next") || "/"));
+  redirect(String(form.get("next") || "/dashboard"));
 }
 
 export async function signIn(form: FormData) {
   await ensureMigrated();
   await auth.api.signInEmail({ body: { email: String(form.get("email")), password: String(form.get("password")) } });
-  redirect(String(form.get("next") || "/"));
+  redirect(String(form.get("next") || "/dashboard"));
 }
 
 export async function signOut() {

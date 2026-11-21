@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { db, getUser, type EventRow, type Milestone } from "@/lib/db";
-import { getDealBySlug, getMilestones } from "@/lib/deals";
+import { getDealBySlug, getMilestones, scoreChanges } from "@/lib/deals";
 import { ScoreChip } from "../../score-chip";
 import { accept, fastForward, fund, reject, submit } from "../../actions";
 import { CopyLink } from "./copy-link";
+import { CountTo } from "./score-delta";
 
 const inr = (paise: number) => "₹" + (paise / 100).toLocaleString("en-IN");
 const when = (t: number) => new Date(t).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -144,6 +145,8 @@ function MilestoneCard({ m, slug, isFreelancer, isClient, signedIn }: {
         </div>
       </div>
 
+      <ScoreChanges milestoneId={m.id} />
+
       <div className="mt-4 flex flex-wrap items-start gap-3 border-t border-black/5 pt-4">
         {m.state === "AGREED" && isClient ? (
           <form action={fund}>
@@ -151,7 +154,7 @@ function MilestoneCard({ m, slug, isFreelancer, isClient, signedIn }: {
             <button className="btn">Fund {inr(m.amount)} · held until delivered</button>
           </form>
         ) : null}
-        {m.state === "AGREED" && !signedIn ? <a href="/" className="btn">Sign in to fund</a> : null}
+        {m.state === "AGREED" && !signedIn ? <a href={`/login?next=/d/${slug}`} className="btn">Sign in to fund</a> : null}
 
         {m.state === "FUNDED" && isFreelancer ? (
           <form action={submit} className="w-full space-y-2">
@@ -198,6 +201,32 @@ function MilestoneCard({ m, slug, isFreelancer, isClient, signedIn }: {
           </form>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+function ScoreChanges({ milestoneId }: { milestoneId: string }) {
+  const changes = scoreChanges(milestoneId).filter((c) => c.after !== c.before);
+  if (!changes.length) return null;
+  return (
+    <div className="mt-4 rounded-xl bg-black/[0.03] p-4">
+      <div className="label mb-2">What this outcome did to trust</div>
+      <ul className="grid gap-2 sm:grid-cols-2">
+        {changes.map((c) => {
+          const up = c.after > c.before;
+          return (
+            <li key={c.id} className="flex items-baseline justify-between gap-3 text-sm">
+              <span>
+                <a href={`/u/${c.user_id}`} className="font-medium hover:underline">{c.name}</a>
+                <span className="text-black/50"> · {c.reason}</span>
+              </span>
+              <span className={`font-semibold ${up ? "text-emerald-700" : "text-rose-700"}`}>
+                {c.before} → <CountTo from={c.before} to={c.after} /> ({up ? "+" : ""}{c.after - c.before})
+              </span>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

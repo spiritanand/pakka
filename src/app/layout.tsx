@@ -24,10 +24,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           </Link>
           {u ? (
             <div className="flex items-center gap-3 text-sm">
+              <Link href="/dashboard" className="hover:underline">Dashboard</Link>
               <Link href={`/u/${u.id}`} className="hover:underline">{u.name}</Link>
               <form action={signOut}><button className="btn-ghost">Sign out</button></form>
             </div>
-          ) : null}
+          ) : (
+            <Link href="/login" className="btn-ghost">Sign in</Link>
+          )}
         </header>
         <main className="mx-auto max-w-5xl px-5 pb-20">{children}</main>
       </body>
