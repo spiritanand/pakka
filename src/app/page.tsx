@@ -253,7 +253,7 @@ export default function Landing() {
           </div>
           <div className="overflow-hidden rounded-lg border border-ink/10 bg-ink text-[13px] leading-relaxed">
             <div className="border-b border-white/10 px-5 py-3 font-mono text-white/90">
-              <span className="text-emerald-400">$</span> curl pakka.app/api/trust/<span className="text-emerald-300">ABCPR1234K</span>
+              <span className="text-emerald-400">$</span> curl pakka.zwala.dev/api/trust/<span className="text-emerald-300">ABCPR1234K</span>
             </div>
             <pre className="overflow-x-auto px-5 py-4 font-mono text-white/70">{`{
   "subject": { "name": "Priya", "pan": "ABCXXXX34K" },
