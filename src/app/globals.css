@@ -1,17 +1,100 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
 }
 
+@theme {
+  --color-ink: #0b1712;
+  --color-ink-2: #3d4a44;
+  --color-muted: #66736d;
+  --color-faint: #98a39e;
+  --color-line: #e3e8e5;
+  --color-line-strong: #cfd7d3;
+  --color-paper: #ffffff;
+  --color-wash: #f6f9f7;
+  --color-brand: var(--color-emerald-700);
+  --color-brand-hover: var(--color-emerald-800);
+  --color-brand-soft: var(--color-emerald-50);
+
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
+
+  --text-display: 3.75rem;
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.035em;
+}
+
+:root {
+  --rail-pad: 1.25rem;
+  color-scheme: light;
+}
+@media (min-width: 640px) {
+  :root { --rail-pad: 2rem; }
+}
+
+html { background: var(--color-paper); }
 body {
-  background: #f6f4ef;
-  color: #1a1a1a;
+  background: var(--color-paper);
+  color: var(--color-ink);
 }
 
-.card { @apply rounded-2xl border border-black/10 bg-white p-5 shadow-sm; }
-.btn { @apply inline-flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-2 text-sm font-medium text-white hover:bg-black/80 disabled:opacity-40; }
-.btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-xl border border-black/15 bg-white px-4 py-2 text-sm font-medium hover:bg-black/5; }
-.input { @apply w-full rounded-xl border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-black; }
-.label { @apply text-xs font-medium uppercase tracking-wide text-black/50; }
+input[type="checkbox"], input[type="radio"] { accent-color: var(--color-emerald-700); }
+
+::selection { background: var(--color-emerald-100); color: var(--color-emerald-900); }
+
+:where(a, button, summary, [tabindex], input[type="checkbox"], input[type="radio"]):focus-visible {
+  outline: 2px solid var(--color-emerald-600);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+@layer components {
+  .rails {
+    @apply mx-auto w-full max-w-[1120px] border-x border-line;
+    padding-inline: var(--rail-pad);
+  }
+  .hairline, .section {
+    @apply border-t border-line;
+    margin-inline: calc(var(--rail-pad) * -1);
+    padding-inline: var(--rail-pad);
+  }
+  .section { @apply py-10 sm:py-14; }
+
+  .eyebrow { @apply text-xs font-semibold tracking-[0.08em] text-emerald-700 uppercase; }
+  .label { @apply text-[13px] font-medium text-muted; }
+  .stat { @apply text-4xl font-semibold tracking-tight tabular-nums text-ink; }
+  .mono { @apply font-mono text-xs text-faint; }
+
+  .card { @apply rounded-lg border border-line bg-paper p-5; }
+
+  .btn, .btn-ink {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-md bg-brand px-4 text-sm font-medium whitespace-nowrap text-white transition-colors hover:bg-brand-hover active:translate-y-px disabled:pointer-events-none disabled:opacity-40;
+  }
+  .btn-ink { @apply bg-ink hover:bg-ink-2; }
+  .btn-ghost {
+    @apply inline-flex h-10 items-center justify-center gap-2 rounded-md border border-line-strong bg-paper px-4 text-sm font-medium whitespace-nowrap text-ink transition-colors hover:border-ink/30 hover:bg-wash active:translate-y-px disabled:pointer-events-none disabled:opacity-40;
+  }
+  .btn-sm { @apply h-8 px-3 text-[13px]; }
+  .link { @apply text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-emerald-600; }
+
+  .input {
+    @apply h-10 w-full rounded-md border border-line-strong bg-paper px-3 text-sm text-ink transition-colors outline-none placeholder:text-faint hover:border-ink/30 focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/15 focus-visible:outline-none;
+  }
+  textarea.input { @apply h-auto py-2; }
+
+  .chip, .badge, .chip-emerald, .chip-amber, .chip-rose, .chip-sky, .chip-zinc { @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap; }
+  .chip-emerald { @apply border-emerald-200 bg-emerald-50 text-emerald-800; }
+  .chip-amber { @apply border-amber-200 bg-amber-50 text-amber-800; }
+  .chip-rose { @apply border-rose-200 bg-rose-50 text-rose-800; }
+  .chip-sky { @apply border-sky-200 bg-sky-50 text-sky-800; }
+  .chip-zinc { @apply border-line-strong bg-wash text-ink-2; }
+  .dot { @apply inline-block size-1.5 rounded-full bg-current; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}

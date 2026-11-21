@@ -104,10 +104,12 @@ function affected(deal: Deal) {
   people.set(deal.freelancer_id, "freelancer");
   if (deal.client_id) people.set(deal.client_id, "client");
   const vouchers = db.prepare(`select voucher_id from vouches where vouchee_id = ?`).all(deal.freelancer_id) as { voucher_id: string }[];
+  const nameOf = (id: string) => (db.prepare(`select name from user where id = ?`).get(id) as { name: string }).name.split(" (")[0];
+  const freelancerName = nameOf(deal.freelancer_id);
   for (const { voucher_id } of vouchers) {
-    if (!people.has(voucher_id)) people.set(voucher_id, "vouched for the freelancer");
+    if (!people.has(voucher_id)) people.set(voucher_id, `vouched for ${freelancerName}`);
     const others = db.prepare(`select vouchee_id from vouches where voucher_id = ?`).all(voucher_id) as { vouchee_id: string }[];
-    for (const { vouchee_id } of others) if (!people.has(vouchee_id)) people.set(vouchee_id, "vouched by a voucher");
+    for (const { vouchee_id } of others) if (!people.has(vouchee_id)) people.set(vouchee_id, `vouched for by ${nameOf(voucher_id)}`);
   }
   return people;
 }

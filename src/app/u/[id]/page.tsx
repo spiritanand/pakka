@@ -28,63 +28,88 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
   const already = me ? t.vouchers.some((v) => v.voucher_id === me.id) : false;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-4">
-        <ScoreChip userId={u.id} name={u.name} />
-        <div className="text-sm text-black/60">
-          PAN {panOk(u.pan) ? "✓ format-verified" : "—"} · GSTIN {gstinOk(u.gstin) ? "✓ checksum-verified" : "—"}
+    <div>
+      <header className="flex flex-wrap items-end justify-between gap-8 pb-12">
+        <ScoreChip userId={u.id} name={u.name} size="lg" />
+        <div className="flex flex-wrap gap-2">
+          <span className={panOk(u.pan) ? "chip-emerald" : "chip-zinc"}>PAN {panOk(u.pan) ? "✓ format-verified" : "not added"}</span>
+          <span className={gstinOk(u.gstin) ? "chip-emerald" : "chip-zinc"}>GSTIN {gstinOk(u.gstin) ? "✓ checksum-verified" : "not added"}</span>
         </div>
-      </div>
+      </header>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <section className="card">
-          <div className="label mb-3">How the score is built</div>
-          {Object.entries(t.parts).map(([k, v]) => (
-            <div key={k} className="flex justify-between border-b border-black/5 py-1 text-sm">
-              <span className="capitalize">{k}</span>
-              <span className={`tabular-nums font-medium ${v < 0 ? "text-rose-700" : ""}`}>{v > 0 ? "+" : ""}{v}</span>
-            </div>
-          ))}
-          <p className="mt-3 text-xs text-black/50">
+      <section className="hairline grid lg:grid-cols-2">
+        <div className="py-10 lg:pr-12">
+          <h2 className="text-xl font-semibold tracking-tight">How the score is built</h2>
+          <table className="mt-6 w-full text-sm">
+            <tbody>
+              {Object.entries(t.parts).map(([k, v]) => (
+                <tr key={k} className="border-t border-line">
+                  <td className="py-3 capitalize text-ink-2">{k}</td>
+                  <td className={`py-3 text-right font-medium tabular-nums ${v < 0 ? "text-rose-700" : v > 0 ? "text-ink" : "text-faint"}`}>
+                    {v > 0 ? "+" : ""}{v}
+                  </td>
+                </tr>
+              ))}
+              <tr className="border-t-2 border-ink">
+                <td className="py-3 font-semibold">Score</td>
+                <td className="py-3 text-right text-lg font-semibold tabular-nums">{t.score}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="mt-4 max-w-prose text-xs leading-relaxed text-muted">
             Only money-verified outcomes count. Max 3 deals per counterparty. A ghost costs 300; every ghost by someone you
             vouched for costs you 150.
           </p>
-        </section>
+        </div>
 
-        <section className="card space-y-3">
-          <div className="label">Vouched for by</div>
-          {t.vouchers.length === 0 ? <p className="text-sm text-black/50">No vouches yet.</p> : null}
-          {t.vouchers.map((v) => (
-            <div key={v.voucher_id} className="text-sm">
-              <a href={`/u/${v.voucher_id}`} className="font-medium hover:underline">{v.voucher_name}</a>
-              <span className="text-black/50"> · score {v.voucher_score} · adds +{v.weight}</span>
-              {v.note ? <div className="text-black/60">“{v.note}”</div> : null}
-            </div>
-          ))}
+        <div className="border-t border-line py-10 lg:border-t-0 lg:border-l lg:pl-12">
+          <h2 className="text-xl font-semibold tracking-tight">Vouched for by</h2>
+          {t.vouchers.length === 0 ? <p className="mt-4 text-sm text-muted">No vouches yet.</p> : null}
+          <ul className="mt-6">
+            {t.vouchers.map((v) => (
+              <li key={v.voucher_id} className="border-t border-line py-3 text-sm">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <a href={`/u/${v.voucher_id}`} className="link font-medium">{v.voucher_name}</a>
+                  <span className="text-xs text-muted tabular-nums">score {v.voucher_score} · adds <span className="font-medium text-emerald-700">+{v.weight}</span></span>
+                </div>
+                {v.note ? <p className="mt-1 text-ink-2">“{v.note}”</p> : null}
+              </li>
+            ))}
+          </ul>
           {given.length ? (
-            <div className="text-sm text-black/60">Vouches for: {given.map((g) => g.name).join(", ")}</div>
+            <p className="mt-4 text-sm text-muted">Vouches for: <span className="text-ink-2">{given.map((g) => g.name).join(", ")}</span></p>
           ) : null}
           {me && me.id !== u.id && !already ? (
-            <form action={vouch} className="space-y-2 border-t border-black/5 pt-3">
+            <form action={vouch} className="mt-8 space-y-3 border-t border-line pt-6">
               <input type="hidden" name="vouchee" value={u.id} />
-              <input className="input" name="note" placeholder="How do you know their work?" required />
-              <button className="btn">Vouch — put my score on the line</button>
-              <p className="text-xs text-black/50">If they ghost a client after this, you lose 150 points.</p>
+              <label className="block space-y-1.5">
+                <span className="label block">Vouch for {u.name}</span>
+                <input className="input" name="note" placeholder="How do you know their work?" required />
+              </label>
+              <button className="btn-ink">Vouch — put my score on the line</button>
+              <p className="text-xs text-muted">If they ghost a client after this, you lose 150 points.</p>
             </form>
           ) : null}
-        </section>
-      </div>
+        </div>
+      </section>
 
-      <section className="card">
-        <div className="label mb-3">Recent outcomes</div>
-        <ul className="space-y-1 text-sm">
+      <section className="section">
+        <div className="flex flex-wrap items-baseline justify-between gap-4">
+          <h2 className="text-xl font-semibold tracking-tight">Recent outcomes</h2>
+          <a href={`/api/trust/${u.id}`} className="font-mono text-xs text-muted underline decoration-line-strong underline-offset-4 hover:text-ink">
+            GET /api/trust/{u.id}
+          </a>
+        </div>
+        {events.length === 0 ? <p className="mt-4 text-sm text-muted">No finished deals yet.</p> : null}
+        <ul className="mt-6">
           {events.map((e) => (
-            <li key={e.id} className={e.type === "GHOSTED" ? "text-rose-700" : ""}>
-              {new Date(e.created_at).toLocaleDateString("en-IN")} · {EVENT_TEXT[e.type]} · ₹{(e.amount / 100).toLocaleString("en-IN")}
+            <li key={e.id} className="grid grid-cols-[5.5rem_1fr_auto] items-baseline gap-4 border-t border-line py-3 text-sm">
+              <span className="text-xs text-faint tabular-nums">{new Date(e.created_at).toLocaleDateString("en-IN")}</span>
+              <span className={e.type === "GHOSTED" ? "font-medium text-rose-700" : "text-ink"}>{EVENT_TEXT[e.type]}</span>
+              <span className="font-medium tabular-nums">₹{(e.amount / 100).toLocaleString("en-IN")}</span>
             </li>
           ))}
         </ul>
-        <a href={`/api/trust/${u.id}`} className="mt-3 inline-block font-mono text-xs text-sky-700 underline">GET /api/trust/{u.id}</a>
       </section>
     </div>
   );
