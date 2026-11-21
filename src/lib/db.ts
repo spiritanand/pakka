@@ -10,6 +10,7 @@ function open() {
   return local;
 }
 
+// libsql drops named (@param) bindings over remote Turso connections; always use positional ? placeholders.
 export const db = g.__pakkaDb ?? open();
 g.__pakkaDb = db;
 
@@ -146,8 +147,8 @@ export type ActivityRow = {
 // Kept out of `events` so trust scores, profiles and the trust report never see these steps.
 export function logActivity(a: Omit<ActivityRow, "id" | "created_at"> & { created_at?: number }) {
   db.prepare(
-    `insert into activity (milestone_id, user_id, type, detail, created_at) values (@milestone_id, @user_id, @type, @detail, @created_at)`,
-  ).run({ ...a, created_at: a.created_at ?? Date.now() });
+    `insert into activity (milestone_id, user_id, type, detail, created_at) values (?, ?, ?, ?, ?)`,
+  ).run(a.milestone_id, a.user_id, a.type, a.detail ?? null, a.created_at ?? Date.now());
 }
 
 export type ScoreChange = {
