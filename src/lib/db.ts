@@ -121,6 +121,29 @@ create table if not exists score_changes (
 );
 `);
 
+db.exec(`
+create table if not exists activity (
+  id integer primary key autoincrement,
+  milestone_id text not null,
+  user_id text not null,
+  type text not null,
+  detail text,
+  created_at integer not null
+);
+`);
+
+export type ActivityType = "SUBMITTED" | "SENT_BACK";
+export type ActivityRow = {
+  id: number; milestone_id: string; user_id: string; type: ActivityType; detail: string | null; created_at: number;
+};
+
+// Kept out of `events` so trust scores, profiles and the trust report never see these steps.
+export function logActivity(a: Omit<ActivityRow, "id" | "created_at"> & { created_at?: number }) {
+  db.prepare(
+    `insert into activity (milestone_id, user_id, type, detail, created_at) values (@milestone_id, @user_id, @type, @detail, @created_at)`,
+  ).run({ ...a, created_at: a.created_at ?? Date.now() });
+}
+
 export type ScoreChange = {
   id: number; milestone_id: string; user_id: string; before: number; after: number; reason: string; created_at: number;
 };

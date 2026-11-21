@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db, logEvent } from "@/lib/db";
+import { db, logActivity, logEvent } from "@/lib/db";
 import { auth, ensureMigrated } from "@/lib/auth";
 import { createDeal } from "@/lib/deals";
 
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     : process.env.NODE_ENV !== "production" && req.headers.get("x-seed") === "1";
   if (!ok) return NextResponse.json({ error: "not found" }, { status: 404 });
   await ensureMigrated();
-  db.exec(`delete from events; delete from vouches; delete from score_changes; delete from milestones; delete from deals;
+  db.exec(`delete from events; delete from activity; delete from vouches; delete from score_changes; delete from milestones; delete from deals;
            delete from session; delete from account; delete from verification; delete from user;`);
 
   const ids: Record<string, string> = {};
@@ -106,6 +106,17 @@ export async function POST(req: Request) {
       const at = now - (5 - i * 2) * DAY;
       const base = { amount: r.amount, milestone_id: r.id };
       logEvent({ ...base, user_id: ids[client], type: "FUNDED", counterparty_id: ids[freelancer], ref: pay, created_at: at });
+      const work = { milestone_id: r.id, user_id: ids[freelancer], type: "SUBMITTED" as const, detail: "https://www.figma.com/file/seed-deliverable" };
+      const sendBack = (items: number[], t: number) =>
+        logActivity({ milestone_id: r.id, user_id: ids[client], type: "SENT_BACK", detail: JSON.stringify(items), created_at: t });
+      if (m.state === "RELEASED") logActivity({ ...work, created_at: at + DAY - 5 * 3600_000 });
+      if (m.state === "SUBMITTED") logActivity({ ...work, created_at: now - 22 * 3600_000 });
+      if (m.state === "DISPUTED") {
+        logActivity({ ...work, created_at: at + DAY });
+        sendBack(m.rejected ?? [], at + 1.5 * DAY);
+        logActivity({ ...work, created_at: at + 2.5 * DAY });
+        sendBack(m.rejected ?? [], at + 3 * DAY);
+      }
       if (m.state === "RELEASED") {
         logEvent({ ...base, user_id: ids[freelancer], type: "DELIVERED", counterparty_id: ids[client], ref: trf, created_at: at + DAY });
         logEvent({ ...base, user_id: ids[client], type: "ACCEPTED", counterparty_id: ids[freelancer], ref: trf, created_at: at + DAY });

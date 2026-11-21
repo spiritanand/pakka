@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { currentUser } from "@/lib/auth";
-import { db, getUser, type EventRow, type Milestone } from "@/lib/db";
+import { db, getUser, type ActivityRow, type EventRow, type Milestone } from "@/lib/db";
 import { canFastForward, createdByClient, getDealBySlug, getMilestones, isEditable, scoreChanges, termsKey } from "@/lib/deals";
 import { ScoreChip, StableNumber, profileHref } from "../../score-chip";
 import { accept, fastForward, fund, joinDeal, submit } from "../../actions";
@@ -12,11 +12,11 @@ import { BackLink } from "@/components/back-link";
 import { siteOrigin, whatsappHref } from "./share";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { Disclosure, SendBackForm } from "./deal-motion";
-import { day, firstName as first, inr, when } from "../../format";
+import { clock, day, firstName as first, inr } from "../../format";
+import { DeliveryTrack, trackSteps, type Named } from "./track";
 import { SubmitButton } from "@/components/submit-button";
 
 type Viewer = "client" | "freelancer" | "other";
-const DAY = 86_400_000;
 const hoursUntil = (t: number) => Math.max(0, Math.ceil((t - Date.now()) / 3_600_000));
 const hostOf = (url: string) => {
   try {
@@ -84,23 +84,23 @@ const OUTCOME: Record<string, Record<Viewer, (n: Names) => string>> = {
   },
 };
 
-const EVENT_TEXT: Record<string, string> = {
-  FUNDED: "paid for a milestone, now held",
-  DELIVERED: "delivered and was paid",
-  ACCEPTED: "accepted the work and released the money",
-  AUTO_RELEASED: "didn't reply, so the money was released",
-  GHOSTED: "missed the deadline",
-  REFUNDED: "got a full refund",
+type Entry = { key: string; at: number; type: string; name: string; milestone: string; amount: number; detail: string | null };
+
+const HISTORY: Record<string, (e: Entry) => string> = {
+  FUNDED: (e) => `${e.name} funded ${e.milestone}`,
+  SUBMITTED: (e) => `${e.name} delivered ${e.milestone}`,
+  SENT_BACK: (e) => {
+    const n = e.detail ? (JSON.parse(e.detail) as number[]).length : 0;
+    return `${e.name} sent ${e.milestone} back${n ? `, ${n} item${n === 1 ? "" : "s"} missing` : ""}`;
+  },
+  ACCEPTED: (e) => `${e.name} accepted ${e.milestone}`,
+  AUTO_RELEASED: (e) => `${e.milestone} auto-released after 72h of silence`,
+  DELIVERED: (e) => `Paid to ${e.name}`,
+  GHOSTED: (e) => `${e.name} missed the deadline for ${e.milestone}`,
+  REFUNDED: (e) => `Refunded to ${e.name}`,
 };
 
-const EVENT_DOT: Record<string, string> = {
-  FUNDED: "bg-emerald-600",
-  DELIVERED: "bg-emerald-600",
-  ACCEPTED: "bg-emerald-600",
-  AUTO_RELEASED: "bg-amber-500",
-  GHOSTED: "bg-rose-600",
-  REFUNDED: "bg-rose-600",
-};
+const MONEY = new Set(["FUNDED", "DELIVERED", "REFUNDED"]);
 
 export async function generateMetadata({ params }: PageProps<"/d/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -136,16 +136,24 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
       `select e.*, u.name from events e join user u on u.id = e.user_id
        where e.milestone_id in (select id from milestones where deal_id = ?) order by e.created_at desc, e.id desc`,
     )
-    .all(deal.id) as (EventRow & { name: string })[];
+    .all(deal.id) as Named<EventRow>[];
+  const activity = db
+    .prepare(
+      `select a.*, u.name from activity a join user u on u.id = a.user_id
+       where a.milestone_id in (select id from milestones where deal_id = ?) order by a.created_at, a.id`,
+    )
+    .all(deal.id) as Named<ActivityRow>[];
+  const titleOf = new Map(milestones.map((m) => [m.id, m.title]));
+  const history: Entry[] = [
+    ...events.map((e) => ({ key: `e${e.id}`, at: e.created_at, type: e.type, name: first(e.name), milestone: titleOf.get(e.milestone_id ?? "") ?? "", amount: e.amount, detail: null })),
+    ...activity.map((a) => ({ key: `a${a.id}`, at: a.created_at, type: a.type, name: first(a.name), milestone: titleOf.get(a.milestone_id) ?? "", amount: 0, detail: a.detail })),
+  ].sort((a, b) => b.at - a.at);
   const total = milestones.reduce((s, m) => s + m.amount, 0);
   const viewer: Viewer = isFreelancer ? "freelancer" : isClient ? "client" : "other";
   const names: Names = { freelancer: freelancer ? first(freelancer.name) : "the freelancer", client: client ? first(client.name) : "The client" };
   const nextToFund = milestones.find((m) => m.state === "AGREED")?.id;
   const dealUrl = `${await siteOrigin()}/d/${slug}`;
   const here = `/d/${slug}`;
-  const settledAt = new Map(
-    events.filter((e) => e.type === "DELIVERED" || e.type === "REFUNDED").map((e) => [e.milestone_id, e.created_at]),
-  );
   const anchor = (m: Milestone) => `#m-${m.idx + 1}`;
   const inReview = milestones.find((m) => m.state === "SUBMITTED");
   const held = milestones.find((m) => m.state === "FUNDED");
@@ -268,26 +276,30 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
           paying={paying}
           awaiting={awaiting}
           forward={forward}
-          createdAt={deal.created_at}
-          settledAt={settledAt.get(m.id)}
+          steps={trackSteps({
+            m,
+            events,
+            activity,
+            client: client ? first(client.name) : null,
+            freelancer: freelancer ? first(freelancer.name) : null,
+            createdAt: deal.created_at,
+          })}
         />
       ))}
 
-      {events.length ? (
+      {history.length ? (
         <section className="section">
-          <h2 className="text-heading">Record</h2>
-          <ol className="mt-6 ml-1 border-l border-line">
-            {events.map((e) => (
-              <li key={e.id} className="relative pb-6 pl-6 last:pb-0">
-                <span aria-hidden className={`absolute top-1.5 -left-[4.5px] size-2 rounded-full ring-4 ring-paper ${EVENT_DOT[e.type] ?? "bg-line-strong"}`} />
-                <div className="text-sm text-ink-2">
-                  <span className="font-medium text-ink">{e.name}</span> {EVENT_TEXT[e.type]} ·{" "}
-                  <span className="font-medium text-ink tabular-nums">{inr(e.amount)}</span>
-                </div>
-                <div className="mt-0.5 flex flex-wrap gap-x-3 text-meta text-muted tabular-nums">
-                  <span>{when(e.created_at)}</span>
-                  {e.ref ? <span className="font-mono text-xs">{e.ref}</span> : null}
-                </div>
+          <h2 className="text-sm font-medium text-ink">Deal history</h2>
+          <ol className="mt-4 max-w-3xl border-t border-line text-meta">
+            {history.map((e) => (
+              <li key={e.key} className="grid gap-x-6 gap-y-0.5 border-b border-line py-2.5 sm:grid-cols-[9.5rem_1fr]">
+                <span className="text-muted tabular-nums">
+                  {day(e.at)} <span className="font-mono text-xs">{clock(e.at)}</span>
+                </span>
+                <span className="text-ink-2">
+                  {HISTORY[e.type]?.(e) ?? e.type}
+                  {MONEY.has(e.type) ? <span className="text-muted tabular-nums"> · {inr(e.amount)}</span> : null}
+                </span>
               </li>
             ))}
           </ol>
@@ -297,9 +309,9 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
   );
 }
 
-function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn, paying, awaiting, forward, createdAt, settledAt }: {
+function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn, paying, awaiting, forward, steps }: {
   m: Milestone; slug: string; viewer: Viewer; names: Names; fundNext: boolean; signedIn: boolean;
-  paying: boolean; awaiting: boolean; forward: boolean; createdAt: number; settledAt?: number;
+  paying: boolean; awaiting: boolean; forward: boolean; steps: ReturnType<typeof trackSteps>;
 }) {
   const isFreelancer = viewer === "freelancer";
   const isClient = viewer === "client";
@@ -328,8 +340,6 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn, paying, 
   const canSubmit = m.state === "FUNDED" && isFreelancer;
   const canReview = m.state === "SUBMITTED" && isClient;
   const canForward = forward && (m.state === "FUNDED" || m.state === "SUBMITTED") && (isClient || isFreelancer);
-  const hoursLeft = m.review_due_at ? hoursUntil(m.review_due_at) : 0;
-  const daysToDeliver = Math.max(1, Math.round((m.due_at - createdAt) / DAY));
 
   return (
     <section id={`m-${m.idx + 1}`} className="section scroll-mt-20">
@@ -345,7 +355,11 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn, paying, 
         </div>
       </div>
 
-      <div className="mt-6 grid gap-8 sm:pl-10 md:grid-cols-[1.4fr_1fr] md:gap-12">
+      <div className="mt-8 sm:pl-10">
+        <DeliveryTrack steps={steps} label={`${m.title}: delivery track`} />
+      </div>
+
+      <div className="mt-10 grid gap-8 sm:pl-10 md:grid-cols-[1.4fr_1fr] md:gap-12">
         {canSubmit ? (
           <form action={submit} className="space-y-6">
             <input type="hidden" name="m" value={m.id} />
@@ -401,39 +415,9 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn, paying, 
           </div>
         )}
 
-        <div className="space-y-4 text-sm">
-          <dl>
-          {m.review_due_at && m.state === "SUBMITTED" ? (
-            <div>
-              <dt className="label">Pays out automatically on</dt>
-              <dd className="mt-1 font-medium tabular-nums">
-                {when(m.review_due_at)} <span className="font-normal text-muted">· in {hoursLeft}h</span>
-              </dd>
-            </div>
-          ) : m.state === "RELEASED" || m.state === "REFUNDED" ? (
-            settledAt ? (
-              <div>
-                <dt className="label">{m.state === "RELEASED" ? "Paid on" : "Refunded on"}</dt>
-                <dd className="mt-1 font-medium tabular-nums">{day(settledAt)}</dd>
-              </div>
-            ) : null
-          ) : (
-            <div>
-              <dt className="label">Deadline</dt>
-              <dd className="mt-1 font-medium tabular-nums">
-                {m.state === "AGREED" ? `${daysToDeliver} day${daysToDeliver === 1 ? "" : "s"} after funding` : day(m.due_at)}
-              </dd>
-            </div>
-          )}
-          </dl>
+        <div className="space-y-3 text-sm">
           {note ? <p className={sentBack ? "text-rose-700" : "text-ink-2"}>{note}</p> : null}
           {m.outcome && OUTCOME[m.outcome] ? <p className="font-medium text-ink">{OUTCOME[m.outcome][viewer](names)}</p> : null}
-          {m.transfer_id || m.refund_id ? (
-            <div className="space-y-0.5 font-mono text-xs text-muted">
-              {m.transfer_id ? <div>Razorpay ref {m.transfer_id}</div> : null}
-              {m.refund_id ? <div>Refund ref {m.refund_id}</div> : null}
-            </div>
-          ) : null}
         </div>
       </div>
 

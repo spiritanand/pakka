@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { db, logEvent, type Deal, type Milestone, type ScoreChange } from "./db";
+import { db, logActivity, logEvent, type Deal, type Milestone, type ScoreChange } from "./db";
 import { rzp } from "./rzp";
 import { trustScore } from "./score";
 
@@ -168,6 +168,7 @@ export function submitWork(milestoneId: string, userId: string, url: string, tic
     )
     .run(url, JSON.stringify(ticks), Date.now() + REVIEW_WINDOW, m.id).changes;
   if (!ok) throw new Error("Milestone is not open for submission");
+  logActivity({ milestone_id: m.id, user_id: userId, type: "SUBMITTED", detail: url });
 }
 
 function affected(deal: Deal) {
@@ -256,9 +257,10 @@ export function reject(milestoneId: string, userId: string, failed: number[]) {
   if (dealOf(m).client_id !== userId) throw new Error("Only the client can reject");
   if (!failed.length) throw new Error("Tick the checklist item(s) that were not delivered");
   const next = m.round >= 2 ? "DISPUTED" : "FUNDED";
-  db.prepare(
+  const ok = db.prepare(
     `update milestones set state = ?, round = round + 1, rejected_items = ?, due_at = ? where id = ? and state = 'SUBMITTED'`,
-  ).run(next, JSON.stringify(failed), Date.now() + 48 * HOUR, m.id);
+  ).run(next, JSON.stringify(failed), Date.now() + 48 * HOUR, m.id).changes;
+  if (ok) logActivity({ milestone_id: m.id, user_id: userId, type: "SENT_BACK", detail: JSON.stringify(failed) });
 }
 
 const isDemoUser = (id: string | null) =>
