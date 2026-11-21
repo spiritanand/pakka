@@ -42,7 +42,7 @@ const STATE: Record<string, { label: string; tone: string; note: string }> = {
 // Line 1 avoids the exact "Held by Razorpay" status label so e2e text matches stay unique.
 const REASSURE = [
   "Razorpay holds the money",
-  "Released when you accept, or 72 hours after delivery",
+  "Paid when you accept, or 72 hours after delivery",
   "Full refund if nothing is delivered",
 ];
 
@@ -354,7 +354,8 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn, createdA
           </div>
         )}
 
-        <dl className="space-y-4 text-sm">
+        <div className="space-y-4 text-sm">
+          <dl>
           {m.review_due_at && m.state === "SUBMITTED" ? (
             <div>
               <dt className="label">Pays out automatically on</dt>
@@ -377,6 +378,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn, createdA
               </dd>
             </div>
           )}
+          </dl>
           {note ? <p className={sentBack ? "text-rose-700" : "text-ink-2"}>{note}</p> : null}
           {m.outcome && OUTCOME[m.outcome] ? <p className="font-medium text-ink">{OUTCOME[m.outcome][viewer](names)}</p> : null}
           {m.transfer_id || m.refund_id ? (
@@ -385,7 +387,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn, createdA
               {m.refund_id ? <div>Refund ref {m.refund_id}</div> : null}
             </div>
           ) : null}
-        </dl>
+        </div>
       </div>
 
       {canFund || needsSignIn || canReview || canForward ? (
