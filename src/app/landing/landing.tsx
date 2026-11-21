@@ -115,7 +115,7 @@ export function Landing({ audience, demoHref }: { audience: Audience; demoHref?:
 
   return (
     <div className="-mt-12 -mb-24 sm:-mt-16">
-      <div className={`${bleed} ${cell} border-b border-line py-3`}>
+      <div className={`${bleed} ${cell} flex justify-center border-b border-line py-3`}>
         <Switcher audience={audience} />
       </div>
 
@@ -135,7 +135,15 @@ export function Landing({ audience, demoHref }: { audience: Audience; demoHref?:
             <Ctas audience={audience} demoHref={demoHref} />
           </div>
         </div>
-        <div className={`${cell} flex items-center justify-center border-t border-line bg-wash py-14 sm:py-20 lg:border-t-0 lg:border-l`}>
+        <div
+          className={`${cell} flex items-center justify-center border-t border-line bg-wash py-14 sm:py-20 lg:border-t-0 lg:border-l`}
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, var(--color-line) 1px, transparent 1px), linear-gradient(to bottom, var(--color-line) 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+            backgroundPosition: "-1px -1px",
+          }}
+        >
           <DealMock />
         </div>
       </section>
