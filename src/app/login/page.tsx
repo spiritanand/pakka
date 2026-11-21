@@ -79,9 +79,11 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
             ))}
           </div>
         </div>
-        <div className="mt-10">
-          <SeedButton />
-        </div>
+        {process.env.NODE_ENV === "production" ? null : (
+          <div className="mt-10">
+            <SeedButton />
+          </div>
+        )}
       </section>
 
       <section className="border-t border-line pt-10 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-14">
