@@ -3,12 +3,13 @@
 import { useId, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { ChevronRight } from "lucide-react";
-import { spring, useAnimateIn } from "@/components/motion";
+import { spring, useAnimateIn, useEntrances } from "@/components/motion";
 import { SubmitButton } from "@/components/submit-button";
 import { reject } from "../../actions";
 
 export function StatusChip({ state, tone, children }: { state: string; tone: string; children: ReactNode }) {
-  const animateIn = useAnimateIn();
+  const entrances = useEntrances();
+  const animateIn = useAnimateIn() && entrances;
   return (
     <motion.span
       key={state}

@@ -166,7 +166,7 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
   const shareInline = isFreelancer && nothingFunded;
   const shareTools = (
     <>
-      <CopyButton value={here} href label="Copy Pakka link" copiedLabel="Copied. Paste it in WhatsApp." size="md" />
+      <CopyButton value={here} href label="Copy Pakka link" size="md" />
       <a href={whatsappHref(dealUrl, deal.title)} target="_blank" rel="noopener noreferrer" className="btn-ghost">
         <MessageCircle size={16} strokeWidth={1.75} aria-hidden className="text-emerald-700" />
         Share on WhatsApp
@@ -202,7 +202,7 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
         {shareInline ? null : isFreelancer ? (
           <div className="flex flex-wrap items-center gap-2">{shareTools}</div>
         ) : (
-          <CopyButton value={here} href label="Copy link" copiedLabel="Copied" />
+          <CopyButton value={here} href label="Copy link" />
         )}
       </header>
 
@@ -477,11 +477,12 @@ function Reassurance() {
 function ScoreChanges({ milestoneId, from }: { milestoneId: string; from: string }) {
   const changes = scoreChanges(milestoneId).filter((c) => c.after !== c.before);
   if (!changes.length) return null;
+  const fresh = changes.some((c) => Date.now() - c.created_at < 60_000);
   return (
     <div className="hairline mt-10 -mb-10 bg-wash pt-10 sm:-mb-14">
       <div className="eyebrow">Scores updated</div>
       <h3 className="mt-3 text-2xl font-semibold tracking-tight">What this outcome did to trust</h3>
-      <Stagger as="ul" inView gap={0.08} className="mx-[calc(var(--rail-pad)*-1)] mt-8 grid gap-px border-t border-line bg-line sm:grid-cols-2">
+      <Stagger as="ul" inView force={fresh} gap={0.08} className="mx-[calc(var(--rail-pad)*-1)] mt-8 grid gap-px border-t border-line bg-line sm:grid-cols-2">
         {changes.map((c) => {
           const up = c.after > c.before;
           const d = c.after - c.before;
@@ -495,6 +496,7 @@ function ScoreChanges({ milestoneId, from }: { milestoneId: string; from: string
                 <StableNumber
                   from={c.before}
                   to={c.after}
+                  force={fresh}
                   className={`text-5xl font-semibold tracking-[-0.04em] ${up ? "text-emerald-700" : "text-rose-700"}`}
                 />
                 <span className={up ? "chip-emerald" : "chip-rose"}>{up ? <ArrowUp size={12} strokeWidth={2} aria-hidden /> : <ArrowDown size={12} strokeWidth={2} aria-hidden />}{up ? "+" : ""}{d}</span>

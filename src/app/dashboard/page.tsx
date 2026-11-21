@@ -170,7 +170,7 @@ function DealList({ deals, role, meta, action, origin }: {
             <span className="flex items-center gap-3 sm:gap-4">
               <span className="relative z-10 hidden items-center gap-0.5 transition-opacity sm:flex pointer-fine:opacity-0 pointer-fine:group-focus-within:opacity-100 pointer-fine:group-hover:opacity-100">
                 <Tip label="Copy link">
-                  <CopyButton value={`/d/${d.slug}`} href variant="icon" label="Copy link" copiedLabel="Copied" className="hover:bg-paper!" />
+                  <CopyButton value={`/d/${d.slug}`} href variant="icon" label="Copy link" className="hover:bg-paper!" />
                 </Tip>
                 <Tip label="Share on WhatsApp">
                   <a href={whatsappHref(`${origin}/d/${d.slug}`, d.title)} target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp" className={ACTION}>

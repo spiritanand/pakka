@@ -13,14 +13,14 @@ const TONE: Record<string, string> = {
 
 export const profileHref = (userId: string, from?: string) => `/u/${userId}${from ? `?from=${encodeURIComponent(from)}` : ""}`;
 
-export function StableNumber({ from, to, className = "", duration = 0.6 }: { from: number; to: number; className?: string; duration?: number }) {
+export function StableNumber({ from, to, className = "", duration = 0.6, force = false }: { from: number; to: number; className?: string; duration?: number; force?: boolean }) {
   const widest = String(from).length > String(to).length ? from : to;
   return (
     <span className={`relative inline-block tabular-nums ${className}`}>
       <span className="sr-only">{to}</span>
       <span aria-hidden className="invisible">{widest}</span>
       <span aria-hidden>
-        <SpringNumber from={from} to={to} duration={duration} className="absolute inset-0 text-right" />
+        <SpringNumber from={from} to={to} duration={duration} force={force} className="absolute inset-0 text-right" />
       </span>
     </span>
   );
