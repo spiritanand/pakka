@@ -1,10 +1,17 @@
-import Database from "better-sqlite3";
+import Database from "libsql";
 
 const g = globalThis as unknown as { __pakkaDb?: Database.Database };
 
-export const db = g.__pakkaDb ?? new Database(process.env.DB_PATH ?? (process.env.VERCEL ? "/tmp/pakka.db" : "pakka.db"));
+function open() {
+  const url = process.env.TURSO_DATABASE_URL;
+  if (url) return new Database(url, { authToken: process.env.TURSO_AUTH_TOKEN } as Database.Options);
+  const local = new Database(process.env.DB_PATH ?? (process.env.VERCEL ? "/tmp/pakka.db" : "pakka.db"));
+  local.pragma("journal_mode = WAL");
+  return local;
+}
+
+export const db = g.__pakkaDb ?? open();
 g.__pakkaDb = db;
-db.pragma("journal_mode = WAL");
 
 db.exec(`
 create table if not exists deals (
@@ -100,9 +107,8 @@ export type User = {
 
 export function logEvent(e: Omit<EventRow, "id" | "created_at"> & { created_at?: number }) {
   db.prepare(
-    `insert into events (user_id, type, amount, counterparty_id, milestone_id, ref, created_at)
-     values (@user_id, @type, @amount, @counterparty_id, @milestone_id, @ref, @created_at)`,
-  ).run({ ...e, created_at: e.created_at ?? Date.now() });
+    `insert into events (user_id, type, amount, counterparty_id, milestone_id, ref, created_at) values (?, ?, ?, ?, ?, ?, ?)`,
+  ).run(e.user_id, e.type, e.amount, e.counterparty_id ?? null, e.milestone_id ?? null, e.ref ?? null, e.created_at ?? Date.now());
 }
 
 export function getUser(id: string) {
