@@ -8,7 +8,7 @@ Every user-facing string, by screen. `[LOCKED]` = used by the e2e test, keep exa
 - Say what happens to the money, in order: client pays, Razorpay holds it, freelancer delivers, money moves.
 - Use the product's real numbers: 72 hours, 48 hours, 300, 150, 0 to 1000.
 - Sentence case. No exclamation marks. No em dashes in UI copy.
-- "You" is the freelancer on the landing page and `/new`. In the deal room, address the person looking: "you" plus the other side's first name. Only a visitor who is neither party reads "the client" / "the freelancer". No gendered pronouns ("if they say nothing").
+- "You" is the freelancer on `/` and `/new`, and the payer on `/paying`. In the deal room, address the person looking: "you" plus the other side's first name. Only a visitor who is neither party reads "the client" / "the freelancer". No gendered pronouns ("if they say nothing").
 
 | Use | Not |
 |---|---|
@@ -19,20 +19,40 @@ Every user-facing string, by screen. `[LOCKED]` = used by the e2e test, keep exa
 | score, vouch | reputation, rating, endorsement |
 | 72 hours (sentences), 72h (chips) | three days |
 
-## Landing page
+## Landing pages
 
-Sections: 1 Hero · 2 How it works · 3 Trust score (API line folded in) · 4 Final CTA.
-Cut: "Fair to both sides", the How it works lede, the score band bar, the cascade heading/sub and its third row, the hero mock's score rows and deal id, the dark API terminal, the floating Human/Machine toggle, "Same link, other itches", the "What moves it" rules table and the "Not a marketplace" section.
+Two pages, one component (`src/app/landing/landing.tsx`): `/` (audience freelancing) and `/paying` (audience paying). The URL is the state.
+Sections: 0 Switcher · 1 Hero · 2 How it works · 3 Fair to both sides · 4 Trust score + live API · 5 Final CTA + Ask AI.
+
+### 0. Switcher
+
+- Hairline pill, centred in a band above the hero (not sticky). Two links, active side filled emerald with `aria-current="page"`, 44px tall, full width on mobile.
+- Desktop: `I'm freelancing` (goes to `/`) · `I'm paying a freelancer` (goes to `/paying`)
+- Mobile: `Freelancing` · `Paying`
+- Both audiences' H1, sub and points share one grid cell, so the hero keeps the same height on both pages.
 
 ### 1. Hero
 
-- Eyebrow: `Money held by` + Razorpay logo
-- Headline: `The money waits until the work is done.`
-- Sub: `Send your client a Pakka link. They pay up front, Razorpay holds the money, and you get it when you deliver.`
-- Primary CTA: `Create a Pakka link` (goes to `/login?next=/new`)
-- Secondary CTA: `Try the demo` (goes to `/login`)
-- Everything on the left paints with the HTML. Only the deal mock springs in, with no delay.
+- Eyebrow (both): `Money held by` + Razorpay logo
+- Deal mock on the right (both), unchanged.
+
+Freelancing (`/`):
+
+- Headline: `Full payment up front. Safe for both of you.`
+- Sub: `Send a Pakka link on WhatsApp. Your client pays, Razorpay holds it. You're paid when they accept, or after 72 hours of silence. Nothing delivered by the deadline, full refund.`
+- Points: `Get the full amount locked in before you start.` · `Client goes quiet? You're paid after 72 hours.` · `Every finished deal raises your trust score.`
+- Primary CTA: `Create a Pakka link` (goes to `/login?next=/new`) · Secondary CTA: `Try the demo` (goes to `/login`)
 - Microcopy (text-muted): `Free to try. Your client doesn't need an account to look.`
+
+Paying (`/paying`):
+
+- Page title: `Pakka: pay a freelancer up front, safely`
+- Meta description: `Your money goes to Razorpay, not the freelancer. It's released when you accept the work, and you get all of it back if nothing is delivered by the deadline.`
+- Headline: `Pay up front. Get it all back if nothing is delivered.`
+- Sub: `Your money goes to Razorpay, not to the freelancer. It's released when you accept the work. Nothing delivered by the deadline, you get all of it back.`
+- Points: `Razorpay holds your money, not the freelancer.` · `You both agree on a checklist before you pay, so 'done' is clear.` · `You get 72 hours to check the work. Say nothing and it counts as accepted.`
+- Primary CTA: `See how a deal works` (goes to `/login`)
+- Plain text beside it: `Got a Pakka link? Open it to review the deal and pay.`
 
 Deal mock:
 
@@ -43,28 +63,36 @@ Deal mock:
 
 ### 2. How it works
 
-- Headline only: `How it works` (no lede; the hero sub already explains it)
+- Headline only: `A deal neither side can ghost.`
 
-| Step | Title | Body |
+| Step | Freelancing | Paying |
 |---|---|---|
-| 1 | `Agree what done means` | `A price, a deadline, a short checklist.` |
-| 2 | `Your client pays up front` | `Razorpay holds the money while you work.` |
-| 3 | `Deliver and get paid` | `No reply in 72 hours? You're paid anyway.` |
+| 1 | `Agree what done means` / `A price, a deadline, a short checklist.` | same |
+| 2 | `Your client pays up front` / `Razorpay holds the money while you work.` | `You pay up front` / `Razorpay holds the money while they work.` |
+| 3 | `Deliver and get paid` / `No reply in 72 hours? You're paid anyway.` | `Check the work` / `Accept it and they're paid. Nothing delivered by the deadline? You get it all back.` |
 
-### 3. Trust score
+### 3. Fair to both sides
+
+- Headline: `Fair to both sides` · Lede: `Neither of you has to go first on trust.`
+- Two columns, the reader's own first, with chip `You`.
+- `If you're freelancing`: `The full amount is held before you start.` · `Paid when they accept, or after 72 hours of silence.` · `The checklist is agreed up front, so 'done' can't keep moving.`
+- `If you're paying`: `Your money sits with Razorpay, not the freelancer.` · `Nothing delivered by the deadline, you get all of it back.` · `72 hours to check the work against the checklist.`
+
+### 4. Trust score + live API
 
 - Headline: `A score built from real payments`
-- Lede: `Finish deals and it goes up. Miss a deadline and it drops 300. So does anyone who vouched for you, by 150.`
-- Layout: lg two columns. Left: headline, lede, API line. Right: cascade, no heading. Mobile: head, cascade, API line.
+- Lede, freelancing: `Finish deals and it goes up. Miss a deadline and it drops 300. So does anyone who vouched for you, by 150.`
+- Lede, paying: `Every freelancer has one, built from real payments. Miss a deadline and it drops 300. So does anyone who vouched for them, by 150.`
 - Cascade rows: `Rohan` / `Missed the deadline` / 323 to 23 (−300) · `Priya` / `Vouched for Rohan` / 695 to 545 (−150)
-- API line: `Anyone can check a score:` + mono link `pakka.zwala.dev/api/trust/CHVPP4321L` (goes to `/api/trust/CHVPP4321L`)
+- Below a hairline, left: `Check anyone before you pay` / `One request, no login. You get the score, how it was built, and who vouched.`
+- Right: dark terminal, `GET /api/trust`, `live response`, copy button `Copy curl` (copies `curl https://pakka.zwala.dev/api/trust/CHVPP4321L`), command `curl pakka.zwala.dev/api/trust/CHVPP4321L` and Priya's live JSON.
+- Under it, muted: link `For AI agents` (goes to `/machine`) + mono `curl -H "Accept: text/markdown" pakka.zwala.dev`
 
-### 4. Final CTA
+### 5. Final CTA
 
-- Headline: `Send a Pakka link before you start.`
-- Sub: `Pakka doesn't find you work. It makes sure you get paid for it.`
-- Primary CTA: `Create a Pakka link`
-- Secondary CTA: `Try the demo`
+- Freelancing: `Send a Pakka link before you start.` / `Pakka doesn't find you work. It makes sure you get paid for it.` + hero CTAs
+- Paying: `Ask for a Pakka link before you pay.` / `Your freelancer makes one in a minute. You pay Razorpay, not them.` + hero CTAs
+- Ask AI row: label `Ask AI about Pakka` + pills `ChatGPT` · `Claude` · `Perplexity` (new tab), prompt `Read https://pakka.zwala.dev/llms.txt and tell me what Pakka does and whether I should use it for my next freelance deal.`
 
 ## Header, footer, metadata
 
