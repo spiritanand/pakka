@@ -137,10 +137,19 @@ export async function submit(form: FormData) {
   revalidatePath(`/d/${form.get("slug")}`);
 }
 
+async function settleOrExplain(slug: string, run: () => Promise<void>) {
+  try {
+    await run();
+  } catch (e) {
+    if (e instanceof deals.PaymentError) redirect(`/d/${slug}?payment=failed`);
+    throw e;
+  }
+  revalidatePath(`/d/${slug}`);
+}
+
 export async function accept(form: FormData) {
   const u = await me();
-  await deals.accept(String(form.get("m")), u.id);
-  revalidatePath(`/d/${form.get("slug")}`);
+  await settleOrExplain(String(form.get("slug")), () => deals.accept(String(form.get("m")), u.id));
 }
 
 export async function reject(form: FormData) {
@@ -155,8 +164,7 @@ export async function reject(form: FormData) {
 
 export async function fastForward(form: FormData) {
   const u = await me();
-  await deals.fastForward(String(form.get("m")), u.id);
-  revalidatePath(`/d/${form.get("slug")}`);
+  await settleOrExplain(String(form.get("slug")), () => deals.fastForward(String(form.get("m")), u.id));
 }
 
 export async function vouch(form: FormData) {

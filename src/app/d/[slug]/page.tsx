@@ -118,6 +118,7 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
   const { slug } = await params;
   const sp = await searchParams;
   const fundingPending = sp.funding === "pending";
+  const paymentFailed = sp.payment === "failed";
   const joinError = typeof sp.join === "string" ? JOIN_ERROR[sp.join] : undefined;
   const deal = getDealBySlug(slug);
   if (!deal) notFound();
@@ -232,6 +233,12 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
         </div>
         {shareInline ? null : isFreelancer || isCreator ? shareTools : <CopyButton value={here} href label="Copy link" />}
       </header>
+
+      {paymentFailed ? (
+        <p role="alert" className="hairline bg-rose-50 py-4 text-sm text-rose-900">
+          Razorpay didn&apos;t accept that just now, so nothing moved. The money is still held. Try again in a minute.
+        </p>
+      ) : null}
 
       {fundingPending && nextToFund ? (
         <p role="status" className="hairline bg-amber-50 py-4 text-sm text-amber-900">

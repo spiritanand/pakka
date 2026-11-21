@@ -211,15 +211,20 @@ function parties(deal: Deal) {
   return { freelancer: deal.freelancer_id, client: deal.client_id };
 }
 
+// Seeded showcase milestones carry placeholder ids (pay_seed…, trf_seed…) that Razorpay doesn't know.
+const isSeedRef = (id: string | null) => !!id && /^(pay|trf)_seed/.test(id);
+
+export class PaymentError extends Error {}
+
 async function settleRelease(m: Milestone, auto: boolean) {
   const deal = dealOf(m);
   const p = parties(deal);
   if (!claim(m.id, "SUBMITTED", "RELEASING")) return;
   try {
-    await rzp.release(m.transfer_id!);
+    if (!isSeedRef(m.transfer_id)) await rzp.release(m.transfer_id!);
   } catch (e) {
     db.prepare(`update milestones set state = 'SUBMITTED' where id = ?`).run(m.id);
-    throw e;
+    throw new PaymentError(e instanceof Error ? e.message : String(e));
   }
   const record = snapshot(deal);
   db.prepare(`update milestones set state = 'RELEASED', outcome = ? where id = ?`).run(auto ? "auto_released" : "accepted", m.id);
@@ -234,10 +239,10 @@ async function settleGhost(m: Milestone) {
   if (!claim(m.id, "FUNDED", "REFUNDING")) return;
   let refundId: string;
   try {
-    refundId = (await rzp.refundReverseAll(m.payment_id!, m.amount)).id;
+    refundId = isSeedRef(m.payment_id) ? `rfnd_seed${m.id.slice(0, 6)}` : (await rzp.refundReverseAll(m.payment_id!, m.amount)).id;
   } catch (e) {
     db.prepare(`update milestones set state = 'FUNDED' where id = ?`).run(m.id);
-    throw e;
+    throw new PaymentError(e instanceof Error ? e.message : String(e));
   }
   const record = snapshot(deal);
   db.prepare(`update milestones set state = 'REFUNDED', outcome = 'ghosted', refund_id = ? where id = ?`).run(refundId, m.id);
