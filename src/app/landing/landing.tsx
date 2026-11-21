@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import type { ReactNode } from "react";
-import { Press, Reveal, Stagger, StaggerItem } from "@/components/motion";
+import { Press } from "@/components/motion";
 import { ApiDemo } from "./api-demo";
 import { AskAi } from "./ask-ai";
 import { Cascade } from "./cascade";
@@ -12,25 +12,18 @@ export type Audience = "freelancing" | "paying";
 
 const bleed = "-mx-(--rail-pad)";
 const cell = "px-(--rail-pad)";
+const band = "section sm:py-24";
 
-const HERO: Record<Audience, { h1: string; sub: string; points: string[] }> = {
+const HERO: Record<Audience, { lead: string; rest: string; sub: string }> = {
   freelancing: {
-    h1: "Full payment up front. Safe for both of you.",
-    sub: "Send a Pakka link on WhatsApp. Your client pays, Razorpay holds it. You're paid when they accept, or after 72 hours of silence. Nothing delivered by the deadline, full refund.",
-    points: [
-      "Get the full amount locked in before you start.",
-      "Client goes quiet? You're paid after 72 hours.",
-      "Every finished deal raises your trust score.",
-    ],
+    lead: "Full payment up front.",
+    rest: "Safe for both of you.",
+    sub: "Razorpay holds the money. You're paid when your client accepts, or after 72 hours of silence.",
   },
   paying: {
-    h1: "Pay up front. Get it all back if nothing is delivered.",
-    sub: "Your money waits with Razorpay until you accept the work. Nothing delivered by the deadline? You get all of it back.",
-    points: [
-      "Your money waits with Razorpay until you accept.",
-      "You both agree on a checklist before you pay, so 'done' is clear.",
-      "You get 72 hours to check the work. Say nothing and it counts as accepted.",
-    ],
+    lead: "Pay up front.",
+    rest: "Get it all back if nothing is delivered.",
+    sub: "Razorpay holds your money until you accept the work.",
   },
 };
 
@@ -47,21 +40,23 @@ const STEPS: Record<Audience, { title: string; body: string }[]> = {
   ],
 };
 
-const SIDES: Record<Audience, { title: string; points: string[] }> = {
+const MOMENTS = ["Before work starts", "After delivery", "If it goes wrong"];
+
+const SIDES: Record<Audience, { title: string; cells: string[] }> = {
   freelancing: {
     title: "If you're freelancing",
-    points: [
-      "The full amount is held before you start.",
-      "Paid when they accept, or after 72 hours of silence.",
-      "The checklist is agreed up front, so 'done' can't keep moving.",
+    cells: [
+      "The full amount is held by Razorpay before you start.",
+      "You're paid when they accept, or after 72 hours of silence.",
+      "The checklist was agreed up front, so 'done' can't keep moving.",
     ],
   },
   paying: {
     title: "If you're paying",
-    points: [
-      "Your money waits with Razorpay until you accept.",
-      "Nothing delivered by the deadline, you get all of it back.",
-      "72 hours to check the work against the checklist.",
+    cells: [
+      "Your money waits with Razorpay, not with the freelancer.",
+      "You get 72 hours to check the work against the checklist.",
+      "Nothing delivered by the deadline? You get all of it back.",
     ],
   },
 };
@@ -71,14 +66,14 @@ const TRUST_LEDE: Record<Audience, string> = {
   paying: "Every freelancer has one, built from real payments. Miss a deadline and it drops 300. So does anyone who vouched for them, by 150.",
 };
 
-const CLOSE: Record<Audience, { title: string; sub: string }> = {
+const CLOSE: Record<Audience, { lead: string; rest: string }> = {
   freelancing: {
-    title: "Send a Pakka link before you start.",
-    sub: "Pakka doesn't find you work. It makes sure you get paid for it.",
+    lead: "Send a Pakka link before you start.",
+    rest: "Pakka doesn't find you work. It makes sure you get paid for it.",
   },
   paying: {
-    title: "Ask for a Pakka link before you pay.",
-    sub: "Your freelancer makes one in a minute. You pay Razorpay, not them.",
+    lead: "Ask for a Pakka link before you pay.",
+    rest: "Your freelancer makes one in a minute. You pay Razorpay, not them.",
   },
 };
 
@@ -96,42 +91,30 @@ function Same({ shown, ghost }: { shown: ReactNode; ghost: ReactNode }) {
   );
 }
 
-function SectionHead({ title, lede }: { title: string; lede?: string }) {
+function TwoTone({ lead, rest }: { lead: string; rest: string }) {
   return (
-    <Reveal className="max-w-2xl">
-      <h2 className="text-3xl font-semibold tracking-[-0.025em] text-balance text-ink sm:text-[40px] sm:leading-[1.1]">
-        {title}
-      </h2>
-      {lede && <p className="mt-4 text-base leading-relaxed text-pretty text-muted sm:text-lg">{lede}</p>}
-    </Reveal>
+    <>
+      {lead} <span className="text-muted">{rest}</span>
+    </>
   );
 }
 
 function Ctas({ audience, demoHref = "#how" }: { audience: Audience; demoHref?: string }) {
-  if (audience === "paying") {
-    return (
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-        <Press>
-          <Link href={demoHref} className="btn h-11 px-5 text-[15px]">
-            See how a deal works
-          </Link>
-        </Press>
-        <p className="max-w-[17rem] text-[13px] leading-snug text-muted">Opens a sample deal. Got your own Pakka link? Open it to review and pay.</p>
-      </div>
-    );
-  }
+  const primary =
+    audience === "paying"
+      ? { href: demoHref, label: "See how a deal works" }
+      : { href: "/login?next=/new", label: "Create a Pakka link" };
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
       <Press>
-        <Link href="/login?next=/new" className="btn h-11 px-5 text-[15px]">
-          Create a Pakka link
+        <Link href={primary.href} className="group btn h-11 px-5">
+          {primary.label}
+          <ArrowRight size={16} strokeWidth={1.75} aria-hidden className="transition-transform group-hover:translate-x-0.5" />
         </Link>
       </Press>
-      <Press>
-        <Link href="/login" className="btn-ghost h-11 px-5 text-[15px]">
-          Try the demo
-        </Link>
-      </Press>
+      <Link href="/login" className="inline-flex h-11 items-center text-sm font-medium text-ink-2 transition-colors hover:text-ink">
+        Try the demo
+      </Link>
     </div>
   );
 }
@@ -143,136 +126,110 @@ export function Landing({ audience, demoHref }: { audience: Audience; demoHref?:
   const close = CLOSE[audience];
 
   return (
-    <div className="-mt-10 -mb-24 sm:-mt-14">
-      <div className={`${bleed} ${cell} flex justify-center border-b border-line py-4 sm:py-5`}>
+    <div className="-mt-12 -mb-24 sm:-mt-16">
+      <div className={`${bleed} ${cell} border-b border-line py-3`}>
         <Switcher audience={audience} />
       </div>
 
-      <section className={`${bleed} grid lg:grid-cols-[1.15fr_1fr]`}>
+      <section className={`${bleed} grid lg:grid-cols-[1.1fr_1fr]`}>
         <div className={`${cell} flex flex-col justify-center py-14 sm:py-20 lg:py-24`}>
-          <div className="flex items-center gap-2.5 text-sm text-muted">
-            <span>Money held by</span>
-            <img src="/razorpay.svg" alt="Razorpay" width={104} height={22} className="h-[22px] w-auto" />
-          </div>
-          <h1 className="mt-6 text-[42px] leading-[1.04] font-semibold tracking-[-0.035em] text-balance text-ink sm:text-display">
-            <Same shown={hero.h1} ghost={ghost.h1} />
+          <p className="flex items-center gap-2 text-meta text-muted">
+            Money held by
+            <img src="/razorpay.svg" alt="Razorpay" width={95} height={20} className="h-5 w-auto" />
+          </p>
+          <h1 className="mt-6 max-w-xl text-display text-ink">
+            <Same shown={<TwoTone lead={hero.lead} rest={hero.rest} />} ghost={<TwoTone lead={ghost.lead} rest={ghost.rest} />} />
           </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-pretty text-muted">
+          <p className="mt-5 max-w-md text-lg leading-relaxed text-ink-2">
             <Same shown={hero.sub} ghost={ghost.sub} />
           </p>
-          <ul className="mt-7 space-y-2.5">
-            {hero.points.map((p, i) => (
-              <li key={p} className="flex gap-2.5 text-[15px] leading-snug text-ink-2">
-                <Check size={16} strokeWidth={1.75} aria-hidden className="mt-0.5 shrink-0 text-emerald-600" />
-                <Same shown={p} ghost={ghost.points[i]} />
-              </li>
-            ))}
-          </ul>
-          <div className="mt-9">
+          <div className="mt-8">
             <Ctas audience={audience} demoHref={demoHref} />
           </div>
-          {audience === "freelancing" && (
-            <p className="mt-5 text-[13px] text-muted">Free to try. Your client doesn&apos;t need an account to look.</p>
-          )}
         </div>
-        <div
-          className={`${cell} relative flex items-center justify-center border-t border-line bg-wash py-14 sm:py-20 lg:border-t-0 lg:border-l`}
-          style={{
-            backgroundImage:
-              "linear-gradient(var(--color-line) 1px, transparent 1px), linear-gradient(90deg, var(--color-line) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-            backgroundPosition: "-1px -1px",
-          }}
-        >
+        <div className={`${cell} flex items-center justify-center border-t border-line bg-wash py-14 sm:py-20 lg:border-t-0 lg:border-l`}>
           <DealMock />
         </div>
       </section>
 
-      <section id="how" className="section scroll-mt-16">
-        <SectionHead title="A deal neither side can ghost." />
-        <Stagger
-          as="ol"
-          inView
-          gap={0.08}
-          className="hairline mt-10 -mb-10 grid divide-y divide-line px-0 sm:-mb-14 sm:grid-cols-3 sm:divide-x sm:divide-y-0"
-        >
+      <section id="how" className={`${band} scroll-mt-16`}>
+        <h2 className="max-w-2xl text-display text-ink">A deal neither side can ghost.</h2>
+        <ol className="hairline mt-12 -mb-12 grid divide-y divide-line sm:-mb-24 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           {STEPS[audience].map((s, i) => (
-            <StaggerItem as="li" key={s.title} className={`${cell} py-8 sm:py-10`}>
-              <span className="grid size-7 place-items-center rounded-full border border-line-strong text-[13px] font-medium tabular-nums text-ink-2">
-                {i + 1}
+            <li key={s.title} className={`${cell} py-8 sm:py-10`}>
+              <span className="text-meta text-muted tabular-nums">{i + 1}</span>
+              <h3 className="mt-4 text-heading text-ink">{s.title}</h3>
+              <p className="mt-2 text-base leading-relaxed text-ink-2">{s.body}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className={band}>
+        <h2 className="max-w-3xl text-display text-ink">
+          <TwoTone lead="Fair to both sides." rest="Neither of you has to go first on trust." />
+        </h2>
+        <div className="hairline mt-12 -mb-12 sm:-mb-24">
+          <div className="hidden border-b border-line sm:grid sm:grid-cols-[11rem_1fr_1fr]">
+            <span />
+            {sides.map((s, i) => (
+              <span key={s.title} className={`${cell} flex items-center gap-2 border-l border-line py-4 text-sm font-medium text-ink`}>
+                {s.title}
+                {i === 0 && <span className="chip-zinc">You</span>}
               </span>
-              <h3 className="mt-5 text-lg font-semibold tracking-tight text-ink">{s.title}</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-muted">{s.body}</p>
-            </StaggerItem>
-          ))}
-        </Stagger>
-      </section>
-
-      <section className="section">
-        <SectionHead title="Fair to both sides" lede="Neither of you has to go first on trust." />
-        <Stagger
-          inView
-          gap={0.08}
-          className="hairline mt-10 -mb-10 grid divide-y divide-line px-0 sm:-mb-14 sm:grid-cols-2 sm:divide-x sm:divide-y-0"
-        >
-          {sides.map((s, i) => (
-            <StaggerItem key={s.title} className={`${cell} py-8 sm:py-10`}>
-              <div className="flex items-center gap-2.5">
-                <h3 className="text-lg font-semibold tracking-tight text-ink">{s.title}</h3>
-                {i === 0 && <span className="chip-emerald">You</span>}
-              </div>
-              <ul className="mt-4 space-y-2.5">
-                {s.points.map((p) => (
-                  <li key={p} className="flex gap-2.5 text-[15px] leading-relaxed text-muted">
-                    <Check size={16} strokeWidth={1.75} aria-hidden className="mt-1 shrink-0 text-emerald-600" />
-                    {p}
-                  </li>
+            ))}
+          </div>
+          <dl className="divide-y divide-line">
+            {MOMENTS.map((m, r) => (
+              <div key={m} className="grid sm:grid-cols-[11rem_1fr_1fr]">
+                <dt className={`${cell} pt-6 text-meta text-muted sm:py-6`}>{m}</dt>
+                {sides.map((s) => (
+                  <dd key={s.title} className={`${cell} pt-3 last:pb-6 sm:border-l sm:border-line sm:py-6`}>
+                    <span className="block text-meta text-muted sm:hidden">{s.title}</span>
+                    <span className="text-base leading-relaxed text-ink-2">{s.cells[r]}</span>
+                  </dd>
                 ))}
-              </ul>
-            </StaggerItem>
-          ))}
-        </Stagger>
+              </div>
+            ))}
+          </dl>
+        </div>
       </section>
 
-      <section className="section">
+      <section className={band}>
         <div className="grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-start lg:gap-16">
-          <SectionHead title="A score built from real payments" lede={TRUST_LEDE[audience]} />
-          <Reveal>
-            <Cascade />
-          </Reveal>
+          <div className="max-w-xl">
+            <h2 className="text-display text-ink">A score built from real payments.</h2>
+            <p className="mt-5 text-lg leading-relaxed text-ink-2">{TRUST_LEDE[audience]}</p>
+          </div>
+          <Cascade />
         </div>
-        <div className="hairline mt-10 grid gap-8 pt-10 sm:mt-14 sm:pt-14 lg:grid-cols-[1fr_1.1fr] lg:items-start lg:gap-16">
-          <Reveal className="max-w-md">
-            <h3 className="text-xl font-semibold tracking-tight text-ink">Check anyone before you pay</h3>
-            <p className="mt-2 text-[15px] leading-relaxed text-muted">
+        <div className="hairline mt-12 grid gap-8 pt-12 sm:mt-16 sm:pt-16 lg:grid-cols-[1fr_1.1fr] lg:items-start lg:gap-16">
+          <div className="max-w-md">
+            <h3 className="text-heading text-ink">Check anyone before you pay</h3>
+            <p className="mt-2 text-base leading-relaxed text-ink-2">
               One request, no login. You get the score, how it was built, and who vouched.
             </p>
-          </Reveal>
-          <Reveal className="min-w-0">
+          </div>
+          <div className="min-w-0">
             <ApiDemo />
-            <p className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px] text-muted">
+            <p className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-meta text-muted">
               <Link href="/machine" className="link text-muted">
                 For AI agents
               </Link>
-              <code className="font-mono text-[12px] break-all">curl -H &quot;Accept: text/markdown&quot; pakka.zwala.dev</code>
+              <code className="font-mono text-xs break-all">curl -H &quot;Accept: text/markdown&quot; pakka.zwala.dev</code>
             </p>
-          </Reveal>
+          </div>
         </div>
       </section>
 
-      <section className="hairline bg-brand-soft/60 py-20 sm:py-28">
-        <Reveal className="flex flex-col items-start gap-8 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <h2 className="text-4xl leading-[1.05] font-semibold tracking-[-0.03em] text-balance text-ink sm:text-5xl">
-              {close.title}
-            </h2>
-            <p className="mt-4 text-lg text-muted">{close.sub}</p>
-          </div>
-          <div className="shrink-0">
-            <Ctas audience={audience} demoHref={demoHref} />
-          </div>
-        </Reveal>
-        <div className="mt-12">
+      <section className={`${band} bg-wash`}>
+        <h2 className="max-w-4xl text-display text-ink">
+          <TwoTone lead={close.lead} rest={close.rest} />
+        </h2>
+        <div className="mt-10">
+          <Ctas audience={audience} demoHref={demoHref} />
+        </div>
+        <div className="hairline mt-16 -mb-12 py-5 sm:-mb-24">
           <AskAi />
         </div>
       </section>

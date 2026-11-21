@@ -22,15 +22,12 @@ export function Terminal({ command, copy, lines, live }: { command: string; copy
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.35 });
   return (
-    <div ref={ref} className="overflow-hidden rounded-xl bg-ink shadow-[0_24px_60px_-30px_rgba(6,40,28,0.55)] ring-1 ring-black/5">
+    <div ref={ref} className="overflow-hidden rounded-lg bg-ink">
       <div className="flex items-center gap-2 border-b border-white/10 py-2 pr-2 pl-4">
-        <span className="size-2.5 rounded-full bg-white/15" />
-        <span className="size-2.5 rounded-full bg-white/15" />
-        <span className="size-2.5 rounded-full bg-white/15" />
-        <span className="ml-2 font-mono text-[11px] text-white/40">GET /api/trust</span>
+        <span className="font-mono text-xs text-white/50">GET /api/trust</span>
         <span className="ml-auto flex items-center gap-3">
           {live ? (
-            <span className="hidden items-center gap-1.5 font-mono text-[11px] text-emerald-300/80 sm:flex">
+            <span className="hidden items-center gap-1.5 font-mono text-xs text-emerald-300/80 sm:flex">
               <span className="size-1.5 rounded-full bg-emerald-400" />
               live response
             </span>

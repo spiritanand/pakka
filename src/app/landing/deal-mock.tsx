@@ -13,12 +13,12 @@ const CHECKLIST = [
 const TICK_AT = 0.6;
 
 function Check({ done, delay }: { done: boolean; delay: number }) {
-  if (!done) return <span className="size-4 shrink-0 rounded-xs border border-line-strong bg-paper" />;
+  if (!done) return <span className="size-4 shrink-0 rounded-sm border border-line-strong bg-paper" />;
   return (
     <span className="relative grid size-4 shrink-0 place-items-center">
-      <span className="absolute inset-0 rounded-xs border border-line-strong bg-paper" />
+      <span className="absolute inset-0 rounded-sm border border-line-strong bg-paper" />
       <motion.span
-        className="relative grid size-4 place-items-center rounded-xs bg-emerald-700 text-white"
+        className="relative grid size-4 place-items-center rounded-sm bg-emerald-700 text-white"
         initial={{ opacity: 0, scale: 0.6 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ ...spring.snappy, delay }}
@@ -37,14 +37,14 @@ export function DealMock() {
       initial={{ opacity: 0.6, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={spring.soft}
-      className="w-full max-w-[420px] rounded-lg border border-line bg-paper text-left shadow-[0_1px_0_rgba(11,23,18,0.04),0_24px_48px_-24px_rgba(11,23,18,0.28)]"
+      className="w-full max-w-[420px] rounded-lg border border-line bg-paper text-left"
     >
-      <div className="border-b border-line px-5 py-3 text-[13px] font-medium text-ink">Logo for Kettle &amp; Co. café</div>
+      <div className="border-b border-line px-5 py-3 text-meta font-medium text-ink">Logo for Kettle &amp; Co. café</div>
 
       <div className="px-5 pt-5 pb-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-xs text-muted">Milestone 1 of 2</div>
+            <div className="text-meta text-muted">Milestone 1 of 2</div>
             <div className="mt-0.5 font-medium text-ink">Brand identity drafts</div>
           </div>
           <motion.span
@@ -57,19 +57,19 @@ export function DealMock() {
             Held by Razorpay
           </motion.span>
         </div>
-        <div className="mt-4 text-[32px] leading-none font-semibold tracking-tight tabular-nums text-ink">₹15,000</div>
+        <div className="mt-4 text-[32px] leading-none font-medium tracking-[-0.02em] tabular-nums text-ink">₹15,000</div>
 
-        <div className="mt-5 text-xs text-muted">Delivered means</div>
+        <div className="mt-5 text-meta text-muted">Delivered means</div>
         <ul className="mt-2 space-y-2">
           {CHECKLIST.map((c, i) => (
-            <li key={c.text} className="flex items-center gap-2.5 text-[13px] text-ink-2">
+            <li key={c.text} className="flex items-center gap-2.5 text-meta text-ink-2">
               <Check done={c.done} delay={TICK_AT + i * 0.16} />
               <span className={c.done ? "" : "text-muted"}>{c.text}</span>
             </li>
           ))}
         </ul>
 
-        <div className="mt-5 flex items-center gap-2 rounded-md bg-wash px-3 py-2 text-xs text-ink-2">
+        <div className="mt-5 flex items-center gap-2 rounded-md bg-wash px-3 py-2 text-meta text-ink-2">
           <span className="size-1.5 shrink-0 rounded-full bg-amber-500" />
           Due 28 Nov. If Meera says nothing for 72h after delivery, Rohan is paid.
         </div>

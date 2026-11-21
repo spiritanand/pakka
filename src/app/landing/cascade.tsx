@@ -23,14 +23,14 @@ export function Cascade() {
                 <span className="ml-2 text-sm text-muted">{c.why}</span>
               </div>
               <div className="shrink-0 text-sm tabular-nums">
-                <span className="text-muted line-through decoration-faint/60">{c.from}</span>
-                <span className="mx-1.5 text-faint">to</span>
+                <span className="text-muted line-through decoration-muted/60">{c.from}</span>
+                <span className="mx-1.5 text-muted">to</span>
                 <SpringNumber
                   from={c.from}
                   to={c.to}
                   duration={0.9}
                   delay={delay}
-                  className="inline-block min-w-[3ch] text-right font-semibold text-ink"
+                  className="inline-block min-w-[3ch] text-right font-medium text-ink"
                 />
                 <motion.span
                   className="ml-2 inline-block text-rose-700"
