@@ -4,6 +4,7 @@ import { currentUser } from "@/lib/auth";
 import { createDeal } from "../actions";
 import { MilestoneFields } from "./milestones";
 import { NOT_BLANK } from "../format";
+import { BackLink } from "@/components/back-link";
 
 export const metadata: Metadata = { title: "New deal" };
 
@@ -20,6 +21,7 @@ export default async function NewDeal({ searchParams }: PageProps<"/new">) {
   return (
     <form action={createDeal}>
       <header className="max-w-2xl pb-12">
+        <BackLink href="/dashboard" label="Dashboard" className="mb-6" />
         <h1 className="text-4xl font-semibold tracking-[-0.03em] sm:text-5xl">New deal</h1>
         <p className="mt-4 text-lg leading-relaxed text-ink-2">
           Say what done means. Get a link to send your client.

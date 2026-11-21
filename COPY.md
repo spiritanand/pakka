@@ -47,10 +47,10 @@ Freelancing (`/`):
 Paying (`/paying`):
 
 - Page title: `Pakka: pay a freelancer up front, safely`
-- Meta description: `Your money goes to Razorpay, not the freelancer. It's released when you accept the work, and you get all of it back if nothing is delivered by the deadline.`
+- Meta description: `Your money waits with Razorpay until you accept the work. Nothing delivered by the deadline? You get all of it back.`
 - Headline: `Pay up front. Get it all back if nothing is delivered.`
-- Sub: `Your money goes to Razorpay, not to the freelancer. It's released when you accept the work. Nothing delivered by the deadline, you get all of it back.`
-- Points: `Razorpay holds your money, not the freelancer.` · `You both agree on a checklist before you pay, so 'done' is clear.` · `You get 72 hours to check the work. Say nothing and it counts as accepted.`
+- Sub: `Your money waits with Razorpay until you accept the work. Nothing delivered by the deadline? You get all of it back.`
+- Points: `Your money waits with Razorpay until you accept.` · `You both agree on a checklist before you pay, so 'done' is clear.` · `You get 72 hours to check the work. Say nothing and it counts as accepted.`
 - Primary CTA: `See how a deal works` (goes to `/login`)
 - Plain text beside it: `Got a Pakka link? Open it to review the deal and pay.`
 
@@ -76,7 +76,7 @@ Deal mock:
 - Headline: `Fair to both sides` · Lede: `Neither of you has to go first on trust.`
 - Two columns, the reader's own first, with chip `You`.
 - `If you're freelancing`: `The full amount is held before you start.` · `Paid when they accept, or after 72 hours of silence.` · `The checklist is agreed up front, so 'done' can't keep moving.`
-- `If you're paying`: `Your money sits with Razorpay, not the freelancer.` · `Nothing delivered by the deadline, you get all of it back.` · `72 hours to check the work against the checklist.`
+- `If you're paying`: `Your money waits with Razorpay until you accept.` · `Nothing delivered by the deadline, you get all of it back.` · `72 hours to check the work against the checklist.`
 
 ### 4. Trust score + live API
 

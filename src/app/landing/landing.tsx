@@ -25,9 +25,9 @@ const HERO: Record<Audience, { h1: string; sub: string; points: string[] }> = {
   },
   paying: {
     h1: "Pay up front. Get it all back if nothing is delivered.",
-    sub: "Your money goes to Razorpay, not to the freelancer. It's released when you accept the work. Nothing delivered by the deadline, you get all of it back.",
+    sub: "Your money waits with Razorpay until you accept the work. Nothing delivered by the deadline? You get all of it back.",
     points: [
-      "Razorpay holds your money, not the freelancer.",
+      "Your money waits with Razorpay until you accept.",
       "You both agree on a checklist before you pay, so 'done' is clear.",
       "You get 72 hours to check the work. Say nothing and it counts as accepted.",
     ],
@@ -59,7 +59,7 @@ const SIDES: Record<Audience, { title: string; points: string[] }> = {
   paying: {
     title: "If you're paying",
     points: [
-      "Your money sits with Razorpay, not the freelancer.",
+      "Your money waits with Razorpay until you accept.",
       "Nothing delivered by the deadline, you get all of it back.",
       "72 hours to check the work against the checklist.",
     ],

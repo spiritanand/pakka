@@ -98,3 +98,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--color-emerald-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  label:has(> input[type="checkbox"]),
+  summary {
+    cursor: pointer;
+  }
+}

@@ -5,7 +5,7 @@ import { Landing } from "../landing/landing";
 export const metadata: Metadata = {
   title: { absolute: "Pakka: pay a freelancer up front, safely" },
   description:
-    "Your money goes to Razorpay, not the freelancer. It's released when you accept the work, and you get all of it back if nothing is delivered by the deadline.",
+    "Your money waits with Razorpay until you accept the work. Nothing delivered by the deadline? You get all of it back.",
 };
 
 export default function Paying() {

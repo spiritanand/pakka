@@ -89,7 +89,7 @@ export function MilestoneFields() {
 
       {rows.length < MAX ? (
         <div className="section py-6! sm:py-8!">
-          <button type="button" onClick={() => setRows((r) => [...r, EMPTY])} className="btn-ghost md:ml-[calc(14rem+3rem)]">
+          <button type="button" onClick={() => setRows((r) => [...r, EMPTY])} className="btn-ghost h-12 w-full border-dashed text-muted hover:text-ink">
             <Plus size={16} strokeWidth={1.75} aria-hidden />
             Add milestone
           </button>
