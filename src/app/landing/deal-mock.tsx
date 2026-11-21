@@ -57,9 +57,9 @@ export function DealMock() {
     <motion.div
       aria-label="Example deal: ₹15,000 held by Razorpay"
       role="img"
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0.001, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ ...spring.soft, delay: 0.15 }}
+      transition={spring.soft}
       className="w-full max-w-[420px] rounded-lg border border-line bg-paper text-left shadow-[0_1px_0_rgba(11,23,18,0.04),0_24px_48px_-24px_rgba(11,23,18,0.28)]"
     >
       <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">

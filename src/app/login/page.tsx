@@ -9,7 +9,7 @@ const PERSONAS = [
   ["meera", "Meera · client"],
   ["rohan", "Rohan · freelancer"],
   ["priya", "Priya · voucher"],
-  ["arjun", "Arjun"],
+  ["arjun", "Arjun · freelancer"],
 ];
 
 export default async function Login({ searchParams }: PageProps<"/login">) {
@@ -20,7 +20,7 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
   if (await currentUser()) redirect(next);
   return (
     <div className="grid gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-0">
-      <section className="lg:pr-14">
+      <section className="lg:self-center lg:pr-14">
         <h1 className="text-3xl font-semibold tracking-[-0.03em] text-balance text-ink sm:text-4xl">
           The money waits until the work is done.
         </h1>
@@ -28,11 +28,7 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
           Your client pays up front. Razorpay holds it until you deliver.
         </p>
         <div className="mt-8">
-          <div className="flex items-baseline justify-between gap-4">
-            <h2 className="text-sm font-semibold text-ink">Try the demo as</h2>
-            <SeedButton />
-          </div>
-          <p className="mt-1 text-[13px] text-muted">One click signs you in.</p>
+          <h2 className="text-sm font-semibold text-ink">Try the demo, one click:</h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {PERSONAS.map(([k, label]) => (
               <form key={k} action={signIn}>
@@ -43,6 +39,9 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
               </form>
             ))}
           </div>
+        </div>
+        <div className="mt-10">
+          <SeedButton />
         </div>
       </section>
 

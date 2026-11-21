@@ -2,36 +2,14 @@ import Link from "next/link";
 import { Press, Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { Cascade } from "./landing/cascade";
 import { DealMock } from "./landing/deal-mock";
-import { ApiDemo } from "./landing/api-demo";
-import { MachineView } from "./landing/machine-view";
 
 const bleed = "-mx-(--rail-pad)";
 const cell = "px-(--rail-pad)";
 
 const STEPS = [
-  {
-    title: "Write down what done means",
-    body: "Milestones, a price, a deadline and a short checklist.",
-  },
-  {
-    title: "Your client pays up front",
-    body: "Razorpay holds the money. Start when the deal says Held by Razorpay.",
-  },
-  {
-    title: "Deliver and get paid",
-    body: "They accept, or tick what's missing. Silent for 72 hours? You're paid.",
-  },
-];
-
-const SIDES = [
-  {
-    who: "If you're paying",
-    points: ["Razorpay holds your money until the checklist is done.", "No delivery by the deadline? Full refund."],
-  },
-  {
-    who: "If you're doing the work",
-    points: ["Money is held before you start.", "Client goes quiet? Paid after 72 hours."],
-  },
+  { title: "Agree what done means", body: "A price, a deadline and a short checklist." },
+  { title: "Your client pays up front", body: "Razorpay holds the money. Then you start." },
+  { title: "Deliver and get paid", body: "They accept, or tick what's missing. No reply in 72 hours? You're paid." },
 ];
 
 const BANDS = [
@@ -40,21 +18,6 @@ const BANDS = [
   { name: "Reliable", range: "600–799", span: 20, tone: "bg-lime-500" },
   { name: "Trusted", range: "800+", span: 20, tone: "bg-emerald-600" },
 ];
-
-function Tick() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      className="mt-1 size-4 shrink-0 text-emerald-600"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      aria-hidden
-    >
-      <path d="M3.5 8.5 6.5 11.5 12.5 4.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 function SectionHead({ title, lede }: { title: string; lede?: string }) {
   return (
@@ -87,7 +50,6 @@ function Ctas() {
 export default function Landing() {
   return (
     <div className="-mt-10 -mb-24 sm:-mt-14">
-      <MachineView />
       <section className={`${bleed} grid lg:grid-cols-[1.15fr_1fr]`}>
         <div className={`${cell} flex flex-col justify-center py-16 sm:py-24 lg:py-28`}>
           <div className="flex items-center gap-2.5 text-sm text-muted">
@@ -97,18 +59,13 @@ export default function Landing() {
           <h1 className="mt-6 text-5xl leading-[1.02] font-semibold tracking-[-0.035em] text-balance text-ink sm:text-display">
             The money waits until the work is done.
           </h1>
-          <Stagger gap={0.07} delay={0.05}>
-            <StaggerItem as="p" className="mt-6 max-w-xl text-lg leading-relaxed text-pretty text-muted sm:text-xl">
-              Send your client a Pakka link. They pay up front, Razorpay holds the money, and you get it when you
-              deliver. Miss the deadline and they get it back.
-            </StaggerItem>
-            <StaggerItem className="mt-10">
-              <Ctas />
-            </StaggerItem>
-            <StaggerItem as="p" className="mt-6 text-[13px] text-faint">
-              For deals made on WhatsApp and Instagram DMs.
-            </StaggerItem>
-          </Stagger>
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-pretty text-muted sm:text-xl">
+            Send your client a Pakka link. They pay up front, Razorpay holds the money, and you get it when you deliver.
+          </p>
+          <div className="mt-10">
+            <Ctas />
+          </div>
+          <p className="mt-6 text-[13px] text-faint">Miss the deadline and they get a full refund.</p>
         </div>
         <div
           className={`${cell} relative flex items-center justify-center border-t border-line bg-wash py-14 sm:py-20 lg:border-t-0 lg:border-l`}
@@ -124,7 +81,7 @@ export default function Landing() {
       </section>
 
       <section className="section">
-        <SectionHead title="How it works" />
+        <SectionHead title="How it works" lede="Someone always has to go first. Now it's Razorpay." />
         <Stagger
           as="ol"
           inView
@@ -144,35 +101,12 @@ export default function Landing() {
       </section>
 
       <section className="section">
-        <SectionHead title="Fair to both sides" lede="Someone always has to go first. Now it's Razorpay." />
-        <Stagger
-          inView
-          gap={0.08}
-          className="hairline mt-12 -mb-10 grid divide-y divide-line px-0 sm:-mb-14 sm:grid-cols-2 sm:divide-x sm:divide-y-0"
-        >
-          {SIDES.map((s) => (
-            <StaggerItem key={s.who} className={`${cell} py-8 sm:py-10`}>
-              <h3 className="text-lg font-semibold tracking-tight text-ink">{s.who}</h3>
-              <ul className="mt-5 space-y-3">
-                {s.points.map((p) => (
-                  <li key={p} className="flex gap-3 text-[15px] leading-relaxed text-ink-2">
-                    <Tick />
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            </StaggerItem>
-          ))}
-        </Stagger>
-      </section>
-
-      <section className="section">
         <SectionHead
           title="A score built from real payments"
           lede="Finish deals and it goes up. Miss a funded deadline and it drops 300."
         />
 
-        <Reveal className="mt-12">
+        <Reveal className="mt-12 max-w-2xl">
           <div className="flex h-2 overflow-hidden rounded-full">
             {BANDS.map((b) => (
               <div
@@ -195,27 +129,16 @@ export default function Landing() {
         <Reveal className="mt-14 max-w-2xl">
           <h3 className="text-lg font-semibold tracking-tight text-ink">One missed deadline, three scores</h3>
           <p className="mt-1 text-sm text-pretty text-muted">
-            Rohan misses a deadline. Priya vouched for him, so she loses 150.
+            Rohan misses a deadline. Priya vouched for him, so she drops too.
           </p>
           <Cascade />
         </Reveal>
 
-        <Reveal className="mt-14 grid gap-8 border-t border-line pt-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:gap-14">
-
-          <div className="max-w-sm">
-
-            <h3 className="text-lg font-semibold tracking-tight text-ink">Check anyone before you pay</h3>
-
-            <p className="mt-2 text-[15px] leading-relaxed text-pretty text-muted">
-
-              One request, no login. You get the score, how it was built, and who vouched.
-
-            </p>
-
-          </div>
-
-          <ApiDemo />
-
+        <Reveal className="mt-8 flex max-w-2xl flex-wrap items-baseline gap-x-2 gap-y-1 text-sm text-muted">
+          Anyone can check a score:
+          <a href="/api/trust/CHVPP4321L" className="link font-mono text-[13px] break-all">
+            pakka.zwala.dev/api/trust/CHVPP4321L
+          </a>
         </Reveal>
       </section>
 
@@ -227,9 +150,8 @@ export default function Landing() {
             </h2>
             <p className="mt-4 text-lg text-muted">Pakka doesn't find you work. It makes sure you get paid for it.</p>
           </div>
-          <div className="shrink-0 space-y-4">
+          <div className="shrink-0">
             <Ctas />
-            <p className="text-[13px] text-faint">This demo runs on Razorpay test mode. No real money moves.</p>
           </div>
         </Reveal>
       </section>

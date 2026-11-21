@@ -6,7 +6,7 @@ export function SeedButton() {
   const [busy, setBusy] = useState(false);
   return (
     <button
-      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-dashed border-line-strong px-3 text-xs text-muted transition-colors hover:border-ink/40 hover:text-ink disabled:opacity-50"
+      className="text-[13px] text-faint underline decoration-transparent underline-offset-4 transition-colors hover:text-ink hover:decoration-line-strong disabled:opacity-50"
       disabled={busy}
       onClick={async () => {
         setBusy(true);

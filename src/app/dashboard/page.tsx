@@ -21,7 +21,7 @@ const SHORT: Record<string, string> = {
 };
 const ORDER = Object.keys(SHORT);
 
-type Row = Deal & { total: number; states: string };
+type Row = Deal & { total: number; states: string; freelancer_name?: string };
 
 function summary(states: string) {
   const counts = new Map<string, number>();
@@ -49,16 +49,12 @@ export default async function Dashboard() {
     .prepare(`${withMilestones} where d.freelancer_id = ? or d.client_id = ? group by d.id order by d.created_at desc`)
     .all(u.id, u.id) as Row[];
   const open = db
-    .prepare(`${withMilestones} where d.client_id is null and d.freelancer_id != ? group by d.id order by d.created_at desc limit 5`)
+    .prepare(
+      `select d.*, sum(m.amount) as total, group_concat(m.state) as states, f.name as freelancer_name
+       from deals d join milestones m on m.deal_id = d.id join user f on f.id = d.freelancer_id
+       where d.client_id is null and d.freelancer_id != ? group by d.id order by d.created_at desc limit 5`,
+    )
     .all(u.id) as Row[];
-
-  const openFirst = !deals.length && open.length > 0;
-  const openList = open.length ? (
-    <section className="section">
-      <ListHead title="Links waiting for a client" count={open.length} />
-      <DealList deals={open} role={() => "Open to fund"} />
-    </section>
-  ) : null;
 
   return (
     <div>
@@ -67,14 +63,12 @@ export default async function Dashboard() {
         <Link href="/new" className="btn">New deal</Link>
       </header>
 
-      {openFirst ? openList : null}
-
       <section className="section">
         <ListHead title="Your deals" count={deals.length} />
         {deals.length ? (
           <DealList deals={deals} role={(d) => (d.freelancer_id === u.id ? "You're the freelancer" : "You're the client")} />
-        ) : openFirst ? (
-          <p className="mt-4 text-sm text-muted">No deals yet.</p>
+        ) : open.length ? (
+          <p className="mt-4 text-sm text-muted">No deals yet. Open a link below to fund one, or start a new deal.</p>
         ) : (
           <p className="mt-6 max-w-md border-y border-line py-8 text-ink-2">
             No deals yet. Create one and send the link to your client on WhatsApp.
@@ -82,25 +76,40 @@ export default async function Dashboard() {
         )}
       </section>
 
-      {openFirst ? null : openList}
+      {open.length ? (
+        <section className="section">
+          <ListHead title="Open links" count={open.length} tag="demo" />
+          <DealList
+            deals={open}
+            role={() => "Open to fund"}
+            meta={(d) => {
+              const n = d.states.split(",").length;
+              return `from ${(d.freelancer_name ?? "").split(/[ (]/)[0]} · ${n} milestone${n === 1 ? "" : "s"}`;
+            }}
+          />
+        </section>
+      ) : null}
 
-      <div className="flex justify-end pt-10 opacity-80">
+      <div className="flex justify-end pt-10">
         <SeedButton />
       </div>
     </div>
   );
 }
 
-function ListHead({ title, count }: { title: string; count: number }) {
+function ListHead({ title, count, tag }: { title: string; count: number; tag?: string }) {
   return (
     <div className="flex items-baseline justify-between gap-4">
-      <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+      <h2 className="flex items-center gap-2.5 text-xl font-semibold tracking-tight">
+        {title}
+        {tag ? <span className="chip-zinc font-normal tracking-normal">{tag}</span> : null}
+      </h2>
       <span className="text-[13px] text-muted tabular-nums">{count}</span>
     </div>
   );
 }
 
-function DealList({ deals, role }: { deals: Row[]; role: (d: Row) => string }) {
+function DealList({ deals, role, meta }: { deals: Row[]; role: (d: Row) => string; meta?: (d: Row) => string }) {
   return (
     <Stagger as="ul" className="mt-6 border-t border-line">
       {deals.map((d) => (
@@ -115,12 +124,14 @@ function DealList({ deals, role }: { deals: Row[]; role: (d: Row) => string }) {
               <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
                 <span className="chip-zinc">{role(d)}</span>
                 <span className="tabular-nums">
-                  {summary(d.states).map((p, i) => (
-                    <span key={p.s}>
-                      {i ? <span className="text-faint"> · </span> : null}
-                      <span className={TONE[p.s] ?? ""}>{p.text}</span>
-                    </span>
-                  ))}
+                  {meta
+                    ? meta(d)
+                    : summary(d.states).map((p, i) => (
+                        <span key={p.s}>
+                          {i ? <span className="text-faint"> · </span> : null}
+                          <span className={TONE[p.s] ?? ""}>{p.text}</span>
+                        </span>
+                      ))}
                 </span>
               </span>
             </span>

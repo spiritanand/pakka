@@ -4,6 +4,7 @@ import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { currentUser } from "@/lib/auth";
 import { MotionProvider } from "@/components/motion";
 import { signOut } from "./actions";
+import { MarkdownLink } from "./markdown-link";
 import "./globals.css";
 
 const plexSans = IBM_Plex_Sans({ variable: "--font-plex-sans", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
@@ -37,7 +38,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                   href={`/u/${u.id}`}
                   className="hidden max-w-[12rem] truncate rounded-md px-2.5 py-1.5 text-ink-2 transition-colors hover:bg-wash hover:text-ink sm:block"
                 >
-                  {u.name}
+                  {u.name.split(" (")[0]}
                 </Link>
                 <form action={signOut}>
                   <button className="btn-ghost btn-sm">Sign out</button>
@@ -60,7 +61,10 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               <span className="font-semibold text-ink">pakka<span className="text-emerald-600">.</span></span>
               <span className="ml-2">Money held by Razorpay until the work is done.</span>
             </span>
-            <span>Your score follows your PAN.</span>
+            <span className="flex flex-wrap items-center gap-x-5 gap-y-1">
+              <MarkdownLink />
+              <span>Test mode. No real money moves.</span>
+            </span>
           </div>
         </footer>
         </MotionProvider>
