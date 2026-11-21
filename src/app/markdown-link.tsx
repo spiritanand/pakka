@@ -10,7 +10,7 @@ export function MarkdownLink() {
       <Link href="/machine" className="underline decoration-line-strong underline-offset-4 transition-colors hover:text-ink">
         For AI agents
       </Link>
-      <code className="hidden font-mono text-xs sm:inline">curl -H &quot;Accept: text/markdown&quot; pakka.zwala.dev</code>
+      <code className="hidden font-mono text-xs sm:inline">curl -H &quot;Accept: text/markdown&quot; https://pakka.zwala.dev</code>
     </span>
   );
 }
