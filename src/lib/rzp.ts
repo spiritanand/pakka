@@ -39,6 +39,8 @@ export const rzp = {
   getTransfer: (id: string) => call<Transfer>("GET", `/transfers/${id}`),
   release: (id: string) => call<Transfer>("PATCH", `/transfers/${id}`, { on_hold: false }),
   reverse: (id: string, amount: number) => call<{ id: string }>("POST", `/transfers/${id}/reversals`, { amount }),
+  refundReverseAll: (paymentId: string, amount: number) =>
+    call<{ id: string }>("POST", `/payments/${paymentId}/refund`, { amount, reverse_all: 1, speed: "normal" }),
   refund: (paymentId: string, amount: number) =>
     call<{ id: string }>("POST", `/payments/${paymentId}/refund`, { amount, speed: "normal" }),
 };

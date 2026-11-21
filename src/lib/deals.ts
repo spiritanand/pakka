@@ -117,10 +117,7 @@ async function settleGhost(m: Milestone) {
   if (!claim(m.id, "FUNDED", "REFUNDING")) return;
   let refundId: string;
   try {
-    const t = await rzp.getTransfer(m.transfer_id!);
-    const left = t.amount - (t.amount_reversed ?? 0);
-    if (left > 0) await rzp.reverse(m.transfer_id!, left);
-    refundId = (await rzp.refund(m.payment_id!, m.amount)).id;
+    refundId = (await rzp.refundReverseAll(m.payment_id!, m.amount)).id;
   } catch (e) {
     db.prepare(`update milestones set state = 'FUNDED' where id = ?`).run(m.id);
     throw e;
@@ -147,10 +144,10 @@ export function reject(milestoneId: string, userId: string, failed: number[]) {
 }
 
 export async function fastForward(milestoneId: string) {
-  const shift = REVIEW_WINDOW + HOUR;
-  db.prepare(
-    `update milestones set due_at = due_at - ?, review_due_at = case when review_due_at is null then null else review_due_at - ? end where id = ?`,
-  ).run(shift, shift, milestoneId);
+  const past = Date.now() - 1000;
+  const m = getMilestone(milestoneId)!;
+  if (m.state === "FUNDED") db.prepare(`update milestones set due_at = ? where id = ?`).run(past, m.id);
+  if (m.state === "SUBMITTED") db.prepare(`update milestones set review_due_at = ? where id = ?`).run(past, m.id);
   await tick(getMilestone(milestoneId)!);
 }
 
