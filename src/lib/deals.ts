@@ -237,12 +237,21 @@ export function reject(milestoneId: string, userId: string, failed: number[]) {
   ).run(next, JSON.stringify(failed), Date.now() + 48 * HOUR, m.id);
 }
 
+const isDemoUser = (id: string | null) =>
+  !!id && !!(db.prepare(`select 1 from user where id = ? and email like '%@pakka.demo'`).get(id));
+
+export function canFastForward(deal: Deal) {
+  if (process.env.ENABLE_DEMO_FASTFORWARD === "1") return true;
+  return isDemoUser(deal.freelancer_id) && isDemoUser(deal.client_id);
+}
+
 export async function fastForward(milestoneId: string, userId: string) {
   const past = Date.now() - 1000;
   const m = getMilestone(milestoneId);
   if (!m) throw new Error("Milestone not found");
   const deal = dealOf(m);
   if (userId !== deal.client_id && userId !== deal.freelancer_id) throw new Error("Only the client or freelancer can do this");
+  if (!canFastForward(deal)) throw new Error("Fast-forward is only available on demo deals");
   if (m.state === "FUNDED") db.prepare(`update milestones set due_at = ? where id = ?`).run(past, m.id);
   if (m.state === "SUBMITTED") db.prepare(`update milestones set review_due_at = ? where id = ?`).run(past, m.id);
   await tick(getMilestone(milestoneId)!);
