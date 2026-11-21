@@ -97,10 +97,10 @@ export async function confirmFunding(milestoneId: string) {
   try {
     const t = await rzp.holdTransfer(paid.payment_id, m.amount, { milestone: m.id });
     const transferId = t.items[0].id;
-    db.prepare(`update milestones set state = 'FUNDED', payment_id = ?, transfer_id = ? where id = ?`).run(
-      paid.payment_id, transferId, m.id,
-    );
     const deal = dealOf(m);
+    db.prepare(`update milestones set state = 'FUNDED', payment_id = ?, transfer_id = ?, due_at = due_at + ? where id = ?`).run(
+      paid.payment_id, transferId, Math.max(0, Date.now() - deal.created_at), m.id,
+    );
     logEvent({ user_id: deal.client_id!, type: "FUNDED", amount: m.amount, counterparty_id: deal.freelancer_id, milestone_id: m.id, ref: paid.payment_id });
   } catch (e) {
     db.prepare(`update milestones set state = 'AGREED' where id = ?`).run(m.id);

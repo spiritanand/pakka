@@ -107,16 +107,16 @@ function SectionHead({ title, lede }: { title: string; lede?: string }) {
   );
 }
 
-function Ctas({ audience }: { audience: Audience }) {
+function Ctas({ audience, demoHref = "#how" }: { audience: Audience; demoHref?: string }) {
   if (audience === "paying") {
     return (
       <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
         <Press>
-          <Link href="/login" className="btn h-11 px-5 text-[15px]">
+          <Link href={demoHref} className="btn h-11 px-5 text-[15px]">
             See how a deal works
           </Link>
         </Press>
-        <p className="max-w-[17rem] text-[13px] leading-snug text-muted">Got a Pakka link? Open it to review the deal and pay.</p>
+        <p className="max-w-[17rem] text-[13px] leading-snug text-muted">Opens a sample deal. Got your own Pakka link? Open it to review and pay.</p>
       </div>
     );
   }
@@ -136,7 +136,7 @@ function Ctas({ audience }: { audience: Audience }) {
   );
 }
 
-export function Landing({ audience }: { audience: Audience }) {
+export function Landing({ audience, demoHref }: { audience: Audience; demoHref?: string }) {
   const hero = HERO[audience];
   const ghost = HERO[other(audience)];
   const sides = [SIDES[audience], SIDES[other(audience)]];
@@ -169,7 +169,7 @@ export function Landing({ audience }: { audience: Audience }) {
             ))}
           </ul>
           <div className="mt-9">
-            <Ctas audience={audience} />
+            <Ctas audience={audience} demoHref={demoHref} />
           </div>
           {audience === "freelancing" && (
             <p className="mt-5 text-[13px] text-muted">Free to try. Your client doesn&apos;t need an account to look.</p>
@@ -188,7 +188,7 @@ export function Landing({ audience }: { audience: Audience }) {
         </div>
       </section>
 
-      <section className="section">
+      <section id="how" className="section scroll-mt-16">
         <SectionHead title="A deal neither side can ghost." />
         <Stagger
           as="ol"
@@ -269,7 +269,7 @@ export function Landing({ audience }: { audience: Audience }) {
             <p className="mt-4 text-lg text-muted">{close.sub}</p>
           </div>
           <div className="shrink-0">
-            <Ctas audience={audience} />
+            <Ctas audience={audience} demoHref={demoHref} />
           </div>
         </Reveal>
         <div className="mt-12">

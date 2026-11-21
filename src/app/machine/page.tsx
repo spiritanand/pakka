@@ -5,7 +5,7 @@ import { Markdown } from "@/components/markdown";
 import { CopyButton } from "@/components/copy-button";
 
 export const metadata: Metadata = {
-  title: "Pakka · machine view",
+  title: { absolute: "Pakka · machine view" },
   alternates: { canonical: "/", types: { "text/markdown": "/index.md" } },
 };
 

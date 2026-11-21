@@ -11,9 +11,18 @@ import "./globals.css";
 const plexSans = IBM_Plex_Sans({ variable: "--font-plex-sans", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 const plexMono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"], weight: ["400", "500"] });
 
+const DESCRIPTION = "Your client pays up front, Razorpay holds it, and you're paid when you deliver. Every finished deal builds a 0–1000 trust score.";
+
 export const metadata: Metadata = {
-  title: "Pakka · Money held by Razorpay until the work is done",
-  description: "Your client pays up front, Razorpay holds it, and you're paid when you deliver. Every finished deal builds a 0–1000 trust score.",
+  metadataBase: new URL(process.env.APP_URL ?? "https://pakka.zwala.dev"),
+  title: { default: "Pakka · Money held by Razorpay until the work is done", template: "%s · Pakka" },
+  description: DESCRIPTION,
+  openGraph: {
+    siteName: "Pakka",
+    type: "website",
+    title: "Pakka · Money held by Razorpay until the work is done",
+    description: DESCRIPTION,
+  },
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

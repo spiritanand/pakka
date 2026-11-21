@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth";
@@ -5,7 +6,10 @@ import { signIn, signUp } from "../actions";
 import { SeedButton } from "../seed-button";
 import { Enter } from "@/components/motion";
 import { SubmitButton } from "@/components/submit-button";
-import { safeNext } from "../format";
+import { firstName, safeNext } from "../format";
+import { getUser } from "@/lib/db";
+import { getDealBySlug } from "@/lib/deals";
+import { BackLink } from "@/components/back-link";
 
 const PERSONAS = [
   ["meera", "Meera · client"],
@@ -22,6 +26,17 @@ const ERRORS: Record<string, string> = {
   signup: "We couldn't create your account. Check the details and try again.",
 };
 
+export async function generateMetadata({ searchParams }: PageProps<"/login">): Promise<Metadata> {
+  return { title: (await searchParams).mode === "signin" ? "Sign in" : "Create an account" };
+}
+
+function payerDeal(next: string) {
+  if (!next.startsWith("/d/")) return null;
+  const deal = getDealBySlug(next.slice(3).split(/[/?#]/)[0]);
+  if (!deal) return null;
+  return { title: deal.title, freelancer: firstName(getUser(deal.freelancer_id)?.name ?? "the freelancer") };
+}
+
 export default async function Login({ searchParams }: PageProps<"/login">) {
   const sp = await searchParams;
   const next = safeNext(sp.next);
@@ -29,14 +44,18 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
   const mode = sp.mode === "signin" ? "signin" : "signup";
   const href = (m: string) => `/login?mode=${m}${sp.next ? `&next=${encodeURIComponent(next)}` : ""}`;
   if (await currentUser()) redirect(next);
+  const payer = payerDeal(next);
   return (
     <div className="grid gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-0">
       <section className="lg:pt-2 lg:pr-14">
+        {payer ? <div className="pb-8"><BackLink href={next} label="Back to the deal" /></div> : null}
         <h1 className="text-3xl font-semibold tracking-[-0.03em] text-balance text-ink sm:text-4xl">
-          The money waits until the work is done.
+          {payer ? `Fund ${payer.title}` : "The money waits until the work is done."}
         </h1>
         <p className="mt-4 max-w-lg text-lg leading-relaxed text-ink-2">
-          Your client pays up front. Razorpay holds it until you deliver.
+          {payer
+            ? `Your money goes to Razorpay, not to ${payer.freelancer}. Create an account so the refund knows where to go.`
+            : "Your client pays up front. Razorpay holds it until you deliver."}
         </p>
         <div className="mt-8">
           <h2 className="text-sm font-semibold text-ink">Or try the demo</h2>
@@ -79,18 +98,26 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
               <input type="hidden" name="next" value={next} />
               <div>
                 <h2 className="text-2xl font-semibold tracking-tight">Create your account</h2>
-                <p className="mt-1.5 text-sm text-muted">Takes a minute. PAN and GSTIN are optional and raise your starting score.</p>
+                <p className="mt-1.5 text-sm text-muted">
+                  {payer ? "Takes a minute. Just your name, email and a password." : "Takes a minute. PAN and GSTIN are optional and raise your starting score."}
+                </p>
               </div>
               <Field label="Name"><input className="input" name="name" placeholder="Your name" autoComplete="name" required autoFocus /></Field>
-              <div className="grid gap-4 sm:grid-cols-2">
+              {payer ? (
                 <Field label="Email"><input className="input" name="email" type="email" placeholder="you@example.com" autoComplete="email" required /></Field>
-                <Field label="Phone"><input className="input" name="phone" placeholder="98xxxxxxxx" autoComplete="tel" inputMode="tel" /></Field>
-              </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Email"><input className="input" name="email" type="email" placeholder="you@example.com" autoComplete="email" required /></Field>
+                  <Field label="Phone"><input className="input" name="phone" placeholder="98xxxxxxxx" autoComplete="tel" inputMode="tel" /></Field>
+                </div>
+              )}
               <Field label="Password"><input className="input" name="password" type="password" placeholder="6 characters or more" autoComplete="new-password" minLength={6} required /></Field>
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="PAN (optional)"><input className="input uppercase" name="pan" placeholder="ABCDE1234F" maxLength={10} /></Field>
-                <Field label="GSTIN (optional)"><input className="input uppercase" name="gstin" placeholder="29ABCDE1234F1Z5" maxLength={15} /></Field>
-              </div>
+              {payer ? null : (
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="PAN (optional)"><input className="input uppercase" name="pan" placeholder="ABCDE1234F" maxLength={10} /></Field>
+                  <Field label="GSTIN (optional)"><input className="input uppercase" name="gstin" placeholder="29ABCDE1234F1Z5" maxLength={15} /></Field>
+                </div>
+              )}
               {error ? <p role="alert" className="text-sm text-rose-700">{error}</p> : null}
               <SubmitButton className="btn h-11 w-full" busy="Creating account…">Create account</SubmitButton>
               <p className="text-center text-sm text-muted">

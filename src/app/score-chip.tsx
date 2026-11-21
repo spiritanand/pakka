@@ -11,6 +11,8 @@ const TONE: Record<string, string> = {
   New: "chip-zinc",
 };
 
+export const profileHref = (userId: string, from?: string) => `/u/${userId}${from ? `?from=${encodeURIComponent(from)}` : ""}`;
+
 export function StableNumber({ from, to, className = "", duration = 0.6 }: { from: number; to: number; className?: string; duration?: number }) {
   const widest = String(from).length > String(to).length ? from : to;
   return (
@@ -24,8 +26,8 @@ export function StableNumber({ from, to, className = "", duration = 0.6 }: { fro
   );
 }
 
-export function ScoreChip({ userId, name, role, size = "md", link = true, badges }: {
-  userId: string; name: string; role?: string; size?: "md" | "lg"; link?: boolean; badges?: ReactNode;
+export function ScoreChip({ userId, name, role, size = "md", link = true, badges, from }: {
+  userId: string; name: string; role?: string; size?: "md" | "lg"; link?: boolean; badges?: ReactNode; from?: string;
 }) {
   const t = trustScore(userId);
   const lg = size === "lg";
@@ -56,5 +58,5 @@ export function ScoreChip({ userId, name, role, size = "md", link = true, badges
     </>
   );
   const cls = "group inline-flex items-center gap-5 rounded-md";
-  return link ? <Link href={`/u/${userId}`} className={cls}>{body}</Link> : <div className={cls}>{body}</div>;
+  return link ? <Link href={profileHref(userId, from)} className={cls}>{body}</Link> : <div className={cls}>{body}</div>;
 }

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, MessageCircle, SquareArrowOutUpRight } from "lucide-react";
@@ -5,10 +6,13 @@ import { CopyButton } from "@/components/copy-button";
 import { Tip, siteOrigin, whatsappHref } from "../d/[slug]/share";
 import { currentUser } from "@/lib/auth";
 import { db, type Deal } from "@/lib/db";
+import { getMilestones } from "@/lib/deals";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { ScoreChip } from "../score-chip";
 import { SeedButton } from "../seed-button";
-import { firstName, inr } from "../format";
+import { day, firstName, inr } from "../format";
+
+export const metadata: Metadata = { title: "Your deals" };
 
 const SHORT: Record<string, string> = {
   AGREED: "not funded",
@@ -24,6 +28,21 @@ const SHORT: Record<string, string> = {
 const ORDER = Object.keys(SHORT);
 
 type Row = Deal & { total: number; states: string; freelancer_name?: string };
+type Action = { text: string; tone: string };
+
+function actionFor(d: Row, userId: string): Action | null {
+  const ms = getMilestones(d.id);
+  if (d.client_id === userId) {
+    const review = ms.find((m) => m.state === "SUBMITTED" && m.review_due_at);
+    if (review) return { text: `Review · ${Math.max(0, Math.ceil((review.review_due_at! - Date.now()) / 3_600_000))}h left`, tone: "chip-amber" };
+  }
+  if (d.freelancer_id === userId) {
+    const held = ms.find((m) => m.state === "FUNDED");
+    if (held) return { text: `Deliver by ${day(held.due_at)}`, tone: "chip-emerald" };
+    if (ms.every((m) => m.state === "AGREED")) return { text: "Send the link", tone: "chip-zinc" };
+  }
+  return null;
+}
 
 function summary(states: string) {
   const counts = new Map<string, number>();
@@ -46,18 +65,21 @@ const withMilestones = `select d.*, sum(m.amount) as total, group_concat(m.state
 
 export default async function Dashboard() {
   const u = await currentUser();
-  if (!u) redirect("/login");
+  if (!u) redirect("/login?mode=signin&next=/dashboard");
   const deals = db
     .prepare(`${withMilestones} where d.freelancer_id = ? or d.client_id = ? group by d.id order by d.created_at desc`)
     .all(u.id, u.id) as Row[];
+  const actions = new Map(deals.map((d) => [d.id, actionFor(d, u.id)]));
+  deals.sort((a, b) => Number(!!actions.get(b.id)) - Number(!!actions.get(a.id)));
+  const demoViewer = u.email.endsWith("@pakka.demo");
   const open = db
     .prepare(
       `select d.*, sum(m.amount) as total, group_concat(m.state) as states, f.name as freelancer_name
        from deals d join milestones m on m.deal_id = d.id join user f on f.id = d.freelancer_id
-       where d.client_id is null and d.freelancer_id != ? group by d.id order by d.created_at desc limit 5`,
+       where d.client_id is null and d.freelancer_id != ? and f.email like '%@pakka.demo' group by d.id order by d.created_at desc limit 5`,
     )
     .all(u.id) as Row[];
-  const waiting = !deals.length && open.length > 0;
+  const waiting = demoViewer && !deals.length && open.length > 0;
   const origin = await siteOrigin();
 
   return (
@@ -71,7 +93,7 @@ export default async function Dashboard() {
         <section className="section">
           <ListHead title="Your deals" count={deals.length} />
           {deals.length ? (
-            <DealList origin={origin} deals={deals} role={(d) => (d.freelancer_id === u.id ? "You're the freelancer" : "You're the client")} />
+            <DealList origin={origin} deals={deals} role={(d) => (d.freelancer_id === u.id ? "You're the freelancer" : "You're the client")} action={(d) => actions.get(d.id) ?? null} />
           ) : (
             <p className="mt-6 max-w-md border-y border-line py-8 text-ink-2">
               No deals yet. Create one and send the link to your client on WhatsApp.
@@ -82,7 +104,7 @@ export default async function Dashboard() {
 
       {open.length ? (
         <section className="section">
-          <ListHead title={waiting ? "Waiting for you" : "Open links"} count={open.length} tag={waiting ? undefined : "demo"} />
+          <ListHead title={waiting ? "Waiting for you" : "Demo deals you can fund"} count={open.length} tag={waiting ? undefined : "demo"} />
           <DealList
             origin={origin}
             deals={open}
@@ -116,18 +138,23 @@ function ListHead({ title, count, tag }: { title: string; count: number; tag?: s
 
 const ACTION = "grid size-7 place-items-center rounded-md text-muted transition-colors hover:bg-paper hover:text-ink";
 
-function DealList({ deals, role, meta, origin }: { deals: Row[]; role: (d: Row) => string; meta?: (d: Row) => string; origin: string }) {
+function DealList({ deals, role, meta, action, origin }: {
+  deals: Row[]; role: (d: Row) => string; meta?: (d: Row) => string; action?: (d: Row) => Action | null; origin: string;
+}) {
   return (
     <Stagger as="ul" className="mt-6 border-t border-line">
-      {deals.map((d) => (
+      {deals.map((d) => {
+        const act = action?.(d);
+        return (
         <StaggerItem as="li" key={d.id} className="border-b border-line">
           <div className="group relative -mx-3 grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 rounded-sm px-3 py-4 transition-colors hover:bg-wash sm:gap-x-6">
             <span className="min-w-0">
-              <Link href={`/d/${d.slug}`} className="block truncate font-medium text-ink after:absolute after:inset-0 after:rounded-sm">
+              <Link href={`/d/${d.slug}`} className="line-clamp-2 font-medium break-words text-ink after:absolute after:inset-0 after:rounded-sm sm:line-clamp-1">
                 {d.title}
               </Link>
               <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
-                <span className="chip-zinc">{role(d)}</span>
+                {act ? <span className={act.tone}>{act.text}</span> : null}
+                <span className={act ? "" : "chip-zinc"}>{role(d)}</span>
                 <span className="tabular-nums">
                   {meta
                     ? meta(d)
@@ -141,7 +168,7 @@ function DealList({ deals, role, meta, origin }: { deals: Row[]; role: (d: Row) 
               </span>
             </span>
             <span className="flex items-center gap-3 sm:gap-4">
-              <span className="relative z-10 flex items-center gap-0.5 transition-opacity pointer-fine:opacity-0 pointer-fine:group-focus-within:opacity-100 pointer-fine:group-hover:opacity-100">
+              <span className="relative z-10 hidden items-center gap-0.5 transition-opacity sm:flex pointer-fine:opacity-0 pointer-fine:group-focus-within:opacity-100 pointer-fine:group-hover:opacity-100">
                 <Tip label="Copy link">
                   <CopyButton value={`/d/${d.slug}`} href variant="icon" label="Copy link" copiedLabel="Copied" className="hover:bg-paper!" />
                 </Tip>
@@ -161,7 +188,8 @@ function DealList({ deals, role, meta, origin }: { deals: Row[]; role: (d: Row) 
             </span>
           </div>
         </StaggerItem>
-      ))}
+        );
+      })}
     </Stagger>
   );
 }

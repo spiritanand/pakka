@@ -15,3 +15,5 @@ export const safeNext = (v: unknown) => {
   const s = typeof v === "string" ? v : "";
   return s.startsWith("/") && !s.startsWith("//") && !s.startsWith("/\\") ? s : "/dashboard";
 };
+
+export const NOT_BLANK = ".*\\S.*";

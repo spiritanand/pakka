@@ -1,23 +1,33 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { db, getUser, type EventRow, type Milestone } from "@/lib/db";
 import { getDealBySlug, getMilestones, scoreChanges } from "@/lib/deals";
-import { ScoreChip, StableNumber } from "../../score-chip";
-import { accept, fastForward, fund, reject, submit } from "../../actions";
+import { ScoreChip, StableNumber, profileHref } from "../../score-chip";
+import { accept, fastForward, fund, submit } from "../../actions";
 import {
-  ArrowDown, ArrowRight, ArrowUp, CalendarClock, Check, CircleAlert, CircleCheck, CircleDashed, Clock, Hourglass,
+  ArrowDown, ArrowRight, ArrowUp, CalendarClock, Check, CircleAlert, CircleCheck, CircleDashed, Clock, ExternalLink, Hourglass,
   LoaderCircle, MessageCircle, RotateCcw, ShieldCheck, Undo2, X, type LucideIcon,
 } from "lucide-react";
 import { CopyButton } from "@/components/copy-button";
 import { BackLink } from "@/components/back-link";
 import { siteOrigin, whatsappHref } from "./share";
 import { Stagger, StaggerItem } from "@/components/motion";
-import { Disclosure, StatusChip } from "./deal-motion";
+import { Disclosure, SendBackForm, StatusChip } from "./deal-motion";
 import { day, firstName as first, inr, when } from "../../format";
 import { SubmitButton } from "@/components/submit-button";
 
 type Viewer = "client" | "freelancer" | "other";
+const DAY = 86_400_000;
+const hoursUntil = (t: number) => Math.max(0, Math.ceil((t - Date.now()) / 3_600_000));
+const hostOf = (url: string) => {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
+};
 type Names = { freelancer: string; client: string };
 
 const STATE: Record<string, { label: string; tone: string; note: string }> = {
@@ -101,6 +111,17 @@ const EVENT_DOT: Record<string, string> = {
   REFUNDED: "bg-rose-600",
 };
 
+export async function generateMetadata({ params }: PageProps<"/d/[slug]">): Promise<Metadata> {
+  const { slug } = await params;
+  const deal = getDealBySlug(slug);
+  if (!deal) notFound();
+  const total = getMilestones(deal.id).reduce((s, m) => s + m.amount, 0);
+  const freelancer = first(getUser(deal.freelancer_id)?.name ?? "A freelancer");
+  const title = `${deal.title} · ${inr(total)} · Pakka`;
+  const description = `${freelancer} sent you a Pakka link. Pay up front, Razorpay holds it until the work is delivered.`;
+  return { title: { absolute: title }, description, openGraph: { title, description, url: `/d/${slug}` } };
+}
+
 export default async function DealPage({ params, searchParams }: PageProps<"/d/[slug]">) {
   const { slug } = await params;
   const fundingPending = (await searchParams).funding === "pending";
@@ -123,6 +144,35 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
   const names: Names = { freelancer: first(freelancer.name), client: client ? first(client.name) : "The client" };
   const nextToFund = milestones.find((m) => m.state === "AGREED")?.id;
   const dealUrl = `${await siteOrigin()}/d/${slug}`;
+  const here = `/d/${slug}`;
+  const settledAt = new Map(
+    events.filter((e) => e.type === "DELIVERED" || e.type === "REFUNDED").map((e) => [e.milestone_id, e.created_at]),
+  );
+  const anchor = (m: Milestone) => `#m-${m.idx + 1}`;
+  const inReview = milestones.find((m) => m.state === "SUBMITTED");
+  const held = milestones.find((m) => m.state === "FUNDED");
+  const toFund = milestones.find((m) => m.id === nextToFund);
+  const nothingFunded = milestones.every((m) => m.state === "AGREED");
+  let next: { text: string; href?: string } | null = null;
+  if (isFreelancer) {
+    if (held) next = { text: `Deliver ${held.title} by ${day(held.due_at)}`, href: anchor(held) };
+    else if (inReview) next = { text: `${inReview.title} is with ${names.client} for review`, href: anchor(inReview) };
+    else if (nothingFunded) next = { text: "Next: send this link to your client." };
+  } else if (isClient || !me) {
+    if (isClient && inReview?.review_due_at)
+      next = { text: `${inReview.title} is waiting for your review · ${hoursUntil(inReview.review_due_at)}h left`, href: anchor(inReview) };
+    else if (toFund) next = { text: `Next: fund milestone ${toFund.idx + 1}, ${inr(toFund.amount)}`, href: anchor(toFund) };
+  }
+  const shareInline = isFreelancer && nothingFunded;
+  const shareTools = (
+    <>
+      <CopyButton value={here} href label="Copy Pakka link" copiedLabel="Copied. Paste it in WhatsApp." size="md" />
+      <a href={whatsappHref(dealUrl, deal.title)} target="_blank" rel="noopener noreferrer" className="btn-ghost">
+        <MessageCircle size={16} strokeWidth={1.75} aria-hidden className="text-emerald-700" />
+        Share on WhatsApp
+      </a>
+    </>
+  );
 
   return (
     <article>
@@ -135,14 +185,25 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
             <span className="font-medium text-ink tabular-nums">{inr(total)}</span> across {milestones.length} milestone
             {milestones.length === 1 ? "" : "s"}. Razorpay holds each one until it's delivered.
           </p>
+          {next ? (
+            <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3 border-l-2 border-emerald-600 pl-4">
+              {next.href ? (
+                <a href={next.href} className="group font-medium text-ink">
+                  <span className="underline decoration-line-strong underline-offset-4 transition-colors group-hover:decoration-emerald-600">{next.text}</span>
+                  <ArrowDown size={16} strokeWidth={1.75} aria-hidden className="ml-1.5 inline align-[-3px] text-emerald-700" />
+                </a>
+              ) : (
+                <p className="font-medium text-ink">{next.text}</p>
+              )}
+              {shareInline ? <div className="flex flex-wrap items-center gap-2">{shareTools}</div> : null}
+            </div>
+          ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <CopyButton value={`/d/${slug}`} href label="Copy Pakka link" copiedLabel="Copied. Paste it in WhatsApp." size="md" />
-          <a href={whatsappHref(dealUrl, deal.title)} target="_blank" rel="noopener noreferrer" className="btn-ghost">
-            <MessageCircle size={16} strokeWidth={1.75} aria-hidden className="text-emerald-700" />
-            Share on WhatsApp
-          </a>
-        </div>
+        {shareInline ? null : isFreelancer ? (
+          <div className="flex flex-wrap items-center gap-2">{shareTools}</div>
+        ) : (
+          <CopyButton value={here} href label="Copy link" copiedLabel="Copied" />
+        )}
       </header>
 
       {fundingPending && nextToFund ? (
@@ -153,11 +214,11 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
 
       <section className="hairline grid sm:grid-cols-2">
         <div className="py-8 sm:pr-10">
-          <ScoreChip userId={freelancer.id} name={freelancer.name} role="Freelancer" />
+          <ScoreChip userId={freelancer.id} name={freelancer.name} role="Freelancer" from={here} />
         </div>
         <div className="flex items-center border-t border-line py-8 sm:border-t-0 sm:border-l sm:pl-10">
           {client ? (
-            <ScoreChip userId={client.id} name={client.name} role="Client" />
+            <ScoreChip userId={client.id} name={client.name} role="Client" from={here} />
           ) : (
             <div>
               <div className="text-[13px] text-muted">Client</div>
@@ -179,6 +240,8 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
             names={names}
             fundNext={m.id === nextToFund}
             signedIn={!!me}
+            createdAt={deal.created_at}
+            settledAt={settledAt.get(m.id)}
           />
         ))}
       </Stagger>
@@ -208,8 +271,8 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
   );
 }
 
-function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
-  m: Milestone; slug: string; viewer: Viewer; names: Names; fundNext: boolean; signedIn: boolean;
+function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn, createdAt, settledAt }: {
+  m: Milestone; slug: string; viewer: Viewer; names: Names; fundNext: boolean; signedIn: boolean; createdAt: number; settledAt?: number;
 }) {
   const isFreelancer = viewer === "freelancer";
   const isClient = viewer === "client";
@@ -236,10 +299,11 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
   const canSubmit = m.state === "FUNDED" && isFreelancer;
   const canReview = m.state === "SUBMITTED" && isClient;
   const canForward = (m.state === "FUNDED" || m.state === "SUBMITTED") && (isClient || isFreelancer);
-  const hoursLeft = m.review_due_at ? Math.max(0, Math.ceil((m.review_due_at - Date.now()) / 3_600_000)) : 0;
+  const hoursLeft = m.review_due_at ? hoursUntil(m.review_due_at) : 0;
+  const daysToDeliver = Math.max(1, Math.round((m.due_at - createdAt) / DAY));
 
   return (
-    <StaggerItem as="section" className="section">
+    <StaggerItem as="section" id={`m-${m.idx + 1}`} className="section scroll-mt-16">
       <div className="grid grid-cols-[1.25rem_1fr] items-baseline gap-x-5 gap-y-3 sm:grid-cols-[1.25rem_1fr_auto]">
         <span className="font-mono text-sm text-muted tabular-nums">{String(m.idx + 1).padStart(2, "0")}</span>
         <div className="min-w-0">
@@ -273,7 +337,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
             </fieldset>
             <label className="block space-y-1.5">
               <span className="label block">Where's the work?</span>
-              <input className="input" name="url" placeholder="Link to the work (staging URL, Figma, Drive…)" required />
+              <input className="input" name="url" type="url" inputMode="url" placeholder="Link to the work (staging URL, Figma, Drive…)" required />
             </label>
             <SubmitButton className="btn h-11 px-5" busy="Mark delivered · sending…">Mark delivered</SubmitButton>
           </form>
@@ -300,9 +364,13 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
               })}
             </ul>
             {m.evidence_url ? (
-              <a href={m.evidence_url} target="_blank" rel="noopener noreferrer" className="link mt-3 inline-block max-w-full truncate text-sm">
-                The work: {m.evidence_url}
-              </a>
+              <div className="mt-4 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+                <a href={m.evidence_url} target="_blank" rel="noopener noreferrer" className="btn-ghost">
+                  <ExternalLink size={16} strokeWidth={1.75} aria-hidden className="text-emerald-700" />
+                  Open the work
+                </a>
+                <span className="min-w-0 truncate text-[13px] text-muted">{hostOf(m.evidence_url)}</span>
+              </div>
             ) : null}
           </div>
         )}
@@ -316,10 +384,22 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
                 <span className="chip-amber">in {hoursLeft}h</span>
               </dd>
             </div>
+          ) : m.state === "RELEASED" || m.state === "REFUNDED" ? (
+            settledAt ? (
+              <div>
+                <dt className="label flex items-center gap-1.5">
+                  {m.state === "RELEASED" ? <CircleCheck size={14} strokeWidth={1.75} aria-hidden /> : <Undo2 size={14} strokeWidth={1.75} aria-hidden />}
+                  {m.state === "RELEASED" ? "Paid on" : "Refunded on"}
+                </dt>
+                <dd className="mt-0.5 font-medium tabular-nums">{day(settledAt)}</dd>
+              </div>
+            ) : null
           ) : (
             <div>
               <dt className="label flex items-center gap-1.5"><CalendarClock size={14} strokeWidth={1.75} aria-hidden />Deadline</dt>
-              <dd className="mt-0.5 font-medium tabular-nums">{day(m.due_at)}</dd>
+              <dd className="mt-0.5 font-medium tabular-nums">
+                {m.state === "AGREED" ? `${daysToDeliver} day${daysToDeliver === 1 ? "" : "s"} after funding` : day(m.due_at)}
+              </dd>
             </div>
           )}
           {note ? <p className={sentBack ? "text-rose-700" : "text-ink-2"}>{note}</p> : null}
@@ -354,21 +434,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
                 <SubmitButton className="btn h-11 px-5" busy="Paying out…">Accept and pay {names.freelancer} {inr(m.amount)}</SubmitButton>
               </form>
               <Disclosure label="Something missing? Send it back.">
-                <form action={reject} className="space-y-4 text-sm">
-                  <input type="hidden" name="m" value={m.id} />
-                  <input type="hidden" name="slug" value={slug} />
-                  <div className="border-t border-line">
-                    {checklist.map((c, i) => (
-                      <label key={i} className="flex cursor-pointer items-start gap-3 border-b border-line py-2.5 transition-colors hover:bg-wash">
-                        <input type="checkbox" name={`fail_${i}`} className="mt-0.5 size-4 shrink-0 accent-rose-700" /> {c}
-                      </label>
-                    ))}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                    <SubmitButton className="btn-ghost" busy="Sending back…">Send back for fixes</SubmitButton>
-                    <p className="text-xs text-muted">The freelancer gets 48 hours to fix it. Sending it back twice marks it disputed.</p>
-                  </div>
-                </form>
+                <SendBackForm milestoneId={m.id} slug={slug} checklist={checklist} freelancer={names.freelancer} />
               </Disclosure>
             </div>
           ) : null}
@@ -387,7 +453,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
         </div>
       ) : null}
 
-      <ScoreChanges milestoneId={m.id} />
+      <ScoreChanges milestoneId={m.id} from={`/d/${slug}`} />
     </StaggerItem>
   );
 }
@@ -408,7 +474,7 @@ function Reassurance() {
   );
 }
 
-function ScoreChanges({ milestoneId }: { milestoneId: string }) {
+function ScoreChanges({ milestoneId, from }: { milestoneId: string; from: string }) {
   const changes = scoreChanges(milestoneId).filter((c) => c.after !== c.before);
   if (!changes.length) return null;
   return (
@@ -421,7 +487,7 @@ function ScoreChanges({ milestoneId }: { milestoneId: string }) {
           const d = c.after - c.before;
           return (
             <StaggerItem as="li" key={c.id} className="bg-wash px-(--rail-pad) py-8 sm:last:odd:col-span-2">
-              <Link href={`/u/${c.user_id}`} className="link font-semibold">{c.name}</Link>
+              <Link href={profileHref(c.user_id, from)} className="link font-semibold">{c.name}</Link>
               <p className="mt-1 text-sm text-muted">{c.reason}</p>
               <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-2">
                 <span className="text-2xl font-medium text-faint tabular-nums">{c.before}</span>

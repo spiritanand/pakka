@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { currentUser } from "@/lib/auth";
@@ -6,7 +7,7 @@ import { panOk, gstinOk, trustScore } from "@/lib/score";
 import { vouch } from "../../actions";
 import { ScoreChip } from "../../score-chip";
 import { Stagger, StaggerItem } from "@/components/motion";
-import { day, firstName } from "../../format";
+import { day, firstName, safeNext } from "../../format";
 import { SubmitButton } from "@/components/submit-button";
 import { BackLink } from "@/components/back-link";
 import { BadgeCheck, BadgeIndianRupee, CircleAlert, CircleCheck, ExternalLink, HandHeart, Hourglass, Undo2, type LucideIcon } from "lucide-react";
@@ -39,8 +40,17 @@ const PART: Record<string, string> = {
   vouches: "Vouches received",
 };
 
-export default async function Profile({ params }: PageProps<"/u/[id]">) {
+export async function generateMetadata({ params }: PageProps<"/u/[id]">): Promise<Metadata> {
+  const u = getUser((await params).id);
+  if (!u) notFound();
+  const title = `${firstName(u.name)} · Pakka score ${trustScore(u.id).score}`;
+  const description = `${firstName(u.name)}'s trust score on Pakka, built from real payments held by Razorpay.`;
+  return { title: { absolute: title }, description, openGraph: { title, description, url: `/u/${u.id}` } };
+}
+
+export default async function Profile({ params, searchParams }: PageProps<"/u/[id]">) {
   const { id } = await params;
+  const from = safeNext((await searchParams).from);
   const u = getUser(id);
   if (!u) notFound();
   const me = await currentUser();
@@ -62,7 +72,13 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
   return (
     <div>
       <div className="pb-8">
-        {me ? <BackLink href="/dashboard" label="Your deals" /> : <BackLink href="/" label="Home" />}
+        {from.startsWith("/d/") ? (
+          <BackLink href={from} label="Back to the deal" />
+        ) : me ? (
+          <BackLink href="/dashboard" label="Your deals" />
+        ) : (
+          <BackLink href="/" label="Home" />
+        )}
       </div>
       <header className="pb-12">
         <ScoreChip
