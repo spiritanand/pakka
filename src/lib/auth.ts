@@ -2,10 +2,11 @@ import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { getMigrations } from "better-auth/db/migration";
 import { headers } from "next/headers";
+import { SqliteDialect } from "kysely";
 import { db } from "./db";
 
 export const authOptions = {
-  database: db,
+  database: { dialect: new SqliteDialect({ database: db }), type: "sqlite" as const },
   emailAndPassword: { enabled: true, minPasswordLength: 6 },
   user: {
     additionalFields: {
