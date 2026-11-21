@@ -5,8 +5,13 @@ import { db, getUser, type EventRow, type Milestone } from "@/lib/db";
 import { getDealBySlug, getMilestones, scoreChanges } from "@/lib/deals";
 import { ScoreChip, StableNumber } from "../../score-chip";
 import { accept, fastForward, fund, reject, submit } from "../../actions";
-import { ArrowDown, ArrowRight, ArrowUp, Check, X } from "lucide-react";
+import {
+  ArrowDown, ArrowRight, ArrowUp, CalendarClock, Check, CircleAlert, CircleCheck, CircleDashed, Clock, Hourglass,
+  LoaderCircle, MessageCircle, RotateCcw, ShieldCheck, Undo2, X, type LucideIcon,
+} from "lucide-react";
 import { CopyButton } from "@/components/copy-button";
+import { BackLink } from "@/components/back-link";
+import { siteOrigin, whatsappHref } from "./share";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { Disclosure, StatusChip } from "./deal-motion";
 import { day, firstName as first, inr, when } from "../../format";
@@ -26,6 +31,25 @@ const STATE: Record<string, { label: string; tone: string; note: string }> = {
   REFUNDED: { label: "Refunded to client", tone: "chip-rose", note: "" },
   DISPUTED: { label: "Disputed", tone: "chip-rose", note: "Sent back twice. Razorpay keeps holding the money." },
 };
+
+const STATE_ICON: Record<string, LucideIcon> = {
+  AGREED: CircleDashed,
+  FUNDING: LoaderCircle,
+  FUNDED: ShieldCheck,
+  SUBMITTED: Hourglass,
+  RELEASING: LoaderCircle,
+  RELEASED: CircleCheck,
+  REFUNDING: LoaderCircle,
+  REFUNDED: Undo2,
+  DISPUTED: CircleAlert,
+};
+
+// Line 1 avoids the exact "Held by Razorpay" status label so e2e text matches stay unique.
+const REASSURE: [LucideIcon, string][] = [
+  [ShieldCheck, "Razorpay holds the money"],
+  [Clock, "Released when you accept, or 72 hours after delivery"],
+  [RotateCcw, "Full refund if nothing is delivered"],
+];
 
 const AGREED_NOTE: Record<Viewer, (n: Names, amount: number) => string> = {
   client: (n, a) => `Razorpay holds your ${inr(a)} until ${n.freelancer} delivers. Miss the deadline and it comes back to you.`,
@@ -98,9 +122,11 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
   const viewer: Viewer = isFreelancer ? "freelancer" : isClient ? "client" : "other";
   const names: Names = { freelancer: first(freelancer.name), client: client ? first(client.name) : "The client" };
   const nextToFund = milestones.find((m) => m.state === "AGREED")?.id;
+  const dealUrl = `${await siteOrigin()}/d/${slug}`;
 
   return (
     <article>
+      {me ? <div className="pb-8"><BackLink href="/dashboard" label="Your deals" /></div> : null}
       <header className="flex flex-wrap items-end justify-between gap-6 pb-10">
         <div className="max-w-3xl">
           <div className="eyebrow">Pakka deal</div>
@@ -110,7 +136,13 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
             {milestones.length === 1 ? "" : "s"}. Razorpay holds each one until it's delivered.
           </p>
         </div>
-        <CopyButton value={`/d/${slug}`} href label="Copy Pakka link" copiedLabel="Copied. Paste it in WhatsApp." size="md" />
+        <div className="flex flex-wrap items-center gap-2">
+          <CopyButton value={`/d/${slug}`} href label="Copy Pakka link" copiedLabel="Copied. Paste it in WhatsApp." size="md" />
+          <a href={whatsappHref(dealUrl, deal.title)} target="_blank" rel="noopener noreferrer" className="btn-ghost">
+            <MessageCircle size={16} strokeWidth={1.75} aria-hidden className="text-emerald-700" />
+            Share on WhatsApp
+          </a>
+        </div>
       </header>
 
       {fundingPending && nextToFund ? (
@@ -185,6 +217,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
   const ticks = new Set<number>(m.evidence_ticks ? JSON.parse(m.evidence_ticks) : []);
   const rejected = new Set<number>(m.rejected_items ? JSON.parse(m.rejected_items) : []);
   const s = STATE[m.state];
+  const StateIcon = STATE_ICON[m.state] ?? CircleDashed;
   const sentBack = m.state === "FUNDED" && rejected.size > 0;
   const note = sentBack
     ? SENT_BACK
@@ -215,7 +248,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
         </div>
         <div className="col-start-2 flex flex-wrap items-center gap-3 sm:col-start-3">
           <span className="text-2xl font-semibold tracking-tight tabular-nums">{inr(m.amount)}</span>
-          <StatusChip state={m.state} tone={s.tone}><span className="dot" />{s.label}</StatusChip>
+          <StatusChip state={m.state} tone={s.tone}><StateIcon size={12} strokeWidth={2} aria-hidden />{s.label}</StatusChip>
         </div>
       </div>
 
@@ -277,7 +310,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
         <dl className="space-y-4 text-sm">
           {m.review_due_at && m.state === "SUBMITTED" ? (
             <div>
-              <dt className="label">Pays out automatically on</dt>
+              <dt className="label flex items-center gap-1.5"><Clock size={14} strokeWidth={1.75} aria-hidden />Pays out automatically on</dt>
               <dd className="mt-0.5 flex flex-wrap items-baseline gap-x-2 font-medium tabular-nums">
                 {when(m.review_due_at)}
                 <span className="chip-amber">in {hoursLeft}h</span>
@@ -285,7 +318,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
             </div>
           ) : (
             <div>
-              <dt className="label">Deadline</dt>
+              <dt className="label flex items-center gap-1.5"><CalendarClock size={14} strokeWidth={1.75} aria-hidden />Deadline</dt>
               <dd className="mt-0.5 font-medium tabular-nums">{day(m.due_at)}</dd>
             </div>
           )}
@@ -302,6 +335,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
 
       {canFund || needsSignIn || canReview || canForward ? (
         <div className="mt-8 border-t border-line pt-6 sm:ml-10">
+          {fundNext && (canFund || needsSignIn) ? <Reassurance /> : null}
           {canFund || needsSignIn || canReview ? (
         <div className="flex flex-wrap items-start gap-3">
           {canFund ? (
@@ -355,6 +389,22 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
 
       <ScoreChanges milestoneId={m.id} />
     </StaggerItem>
+  );
+}
+
+function Reassurance() {
+  return (
+    <div className="mb-6 max-w-xl border-l-2 border-emerald-600/50 pl-4">
+      <ul className="space-y-2 text-sm text-ink-2">
+        {REASSURE.map(([Icon, text]) => (
+          <li key={text} className="flex items-start gap-2.5">
+            <Icon size={16} strokeWidth={1.75} aria-hidden className="mt-0.5 shrink-0 text-emerald-700" />
+            {text}
+          </li>
+        ))}
+      </ul>
+      <Link href="/paying" className="link mt-3 inline-block text-[13px] text-muted hover:text-ink">How Pakka protects you</Link>
+    </div>
   );
 }
 

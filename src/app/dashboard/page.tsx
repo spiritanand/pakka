@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, MessageCircle, SquareArrowOutUpRight } from "lucide-react";
+import { CopyButton } from "@/components/copy-button";
+import { Tip, siteOrigin, whatsappHref } from "../d/[slug]/share";
 import { currentUser } from "@/lib/auth";
 import { db, type Deal } from "@/lib/db";
 import { Stagger, StaggerItem } from "@/components/motion";
@@ -56,6 +58,7 @@ export default async function Dashboard() {
     )
     .all(u.id) as Row[];
   const waiting = !deals.length && open.length > 0;
+  const origin = await siteOrigin();
 
   return (
     <div>
@@ -68,7 +71,7 @@ export default async function Dashboard() {
         <section className="section">
           <ListHead title="Your deals" count={deals.length} />
           {deals.length ? (
-            <DealList deals={deals} role={(d) => (d.freelancer_id === u.id ? "You're the freelancer" : "You're the client")} />
+            <DealList origin={origin} deals={deals} role={(d) => (d.freelancer_id === u.id ? "You're the freelancer" : "You're the client")} />
           ) : (
             <p className="mt-6 max-w-md border-y border-line py-8 text-ink-2">
               No deals yet. Create one and send the link to your client on WhatsApp.
@@ -81,6 +84,7 @@ export default async function Dashboard() {
         <section className="section">
           <ListHead title={waiting ? "Waiting for you" : "Open links"} count={open.length} tag={waiting ? undefined : "demo"} />
           <DealList
+            origin={origin}
             deals={open}
             role={() => "Open to fund"}
             meta={(d) => {
@@ -110,17 +114,18 @@ function ListHead({ title, count, tag }: { title: string; count: number; tag?: s
   );
 }
 
-function DealList({ deals, role, meta }: { deals: Row[]; role: (d: Row) => string; meta?: (d: Row) => string }) {
+const ACTION = "grid size-7 place-items-center rounded-md text-muted transition-colors hover:bg-paper hover:text-ink";
+
+function DealList({ deals, role, meta, origin }: { deals: Row[]; role: (d: Row) => string; meta?: (d: Row) => string; origin: string }) {
   return (
     <Stagger as="ul" className="mt-6 border-t border-line">
       {deals.map((d) => (
         <StaggerItem as="li" key={d.id} className="border-b border-line">
-          <Link
-            href={`/d/${d.slug}`}
-            className="group -mx-3 grid grid-cols-[1fr_auto] items-center gap-x-6 gap-y-1.5 rounded-sm px-3 py-4 transition-colors hover:bg-wash"
-          >
+          <div className="group relative -mx-3 grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 rounded-sm px-3 py-4 transition-colors hover:bg-wash sm:gap-x-6">
             <span className="min-w-0">
-              <span className="block truncate font-medium text-ink">{d.title}</span>
+              <Link href={`/d/${d.slug}`} className="block truncate font-medium text-ink after:absolute after:inset-0 after:rounded-sm">
+                {d.title}
+              </Link>
               <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted">
                 <span className="chip-zinc">{role(d)}</span>
                 <span className="tabular-nums">
@@ -135,11 +140,26 @@ function DealList({ deals, role, meta }: { deals: Row[]; role: (d: Row) => strin
                 </span>
               </span>
             </span>
-            <span className="flex items-center gap-4">
+            <span className="flex items-center gap-3 sm:gap-4">
+              <span className="relative z-10 flex items-center gap-0.5 transition-opacity pointer-fine:opacity-0 pointer-fine:group-focus-within:opacity-100 pointer-fine:group-hover:opacity-100">
+                <Tip label="Copy link">
+                  <CopyButton value={`/d/${d.slug}`} href variant="icon" label="Copy link" copiedLabel="Copied" className="hover:bg-paper!" />
+                </Tip>
+                <Tip label="Share on WhatsApp">
+                  <a href={whatsappHref(`${origin}/d/${d.slug}`, d.title)} target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp" className={ACTION}>
+                    <MessageCircle size={16} strokeWidth={1.75} aria-hidden />
+                  </a>
+                </Tip>
+                <Tip label="Open in new tab">
+                  <Link href={`/d/${d.slug}`} target="_blank" rel="noopener noreferrer" aria-label="Open in new tab" className={ACTION}>
+                    <SquareArrowOutUpRight size={16} strokeWidth={1.75} aria-hidden />
+                  </Link>
+                </Tip>
+              </span>
               <span className="font-semibold text-ink tabular-nums">{inr(d.total)}</span>
               <ArrowRight size={16} strokeWidth={1.75} aria-hidden className="text-faint transition-colors group-hover:text-emerald-700" />
             </span>
-          </Link>
+          </div>
         </StaggerItem>
       ))}
     </Stagger>

@@ -8,14 +8,27 @@ import { ScoreChip } from "../../score-chip";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { day, firstName } from "../../format";
 import { SubmitButton } from "@/components/submit-button";
+import { BackLink } from "@/components/back-link";
+import { BadgeCheck, BadgeIndianRupee, CircleAlert, CircleCheck, ExternalLink, HandHeart, Hourglass, Undo2, type LucideIcon } from "lucide-react";
+import { Tip } from "../../d/[slug]/share";
 
-const OUTCOME: Record<string, [string, string]> = {
-  DELIVERED: ["Paid", "chip-emerald"],
-  ACCEPTED: ["Accepted", "chip-emerald"],
-  AUTO_RELEASED: ["Paid after silence", "chip-amber"],
-  GHOSTED: ["Missed deadline", "chip-rose"],
-  REFUNDED: ["Refunded", "chip-rose"],
+const OUTCOME: Record<string, [string, string, LucideIcon]> = {
+  DELIVERED: ["Paid", "chip-emerald", CircleCheck],
+  ACCEPTED: ["Accepted", "chip-emerald", CircleCheck],
+  AUTO_RELEASED: ["Paid after silence", "chip-amber", Hourglass],
+  GHOSTED: ["Missed deadline", "chip-rose", CircleAlert],
+  REFUNDED: ["Refunded", "chip-rose", Undo2],
 };
+
+function Verified({ label, icon: Icon }: { label: string; icon: LucideIcon }) {
+  return (
+    <Tip label={label}>
+      <span role="img" aria-label={label} tabIndex={0} className="inline-flex rounded-full text-emerald-600">
+        <Icon size={20} strokeWidth={1.75} aria-hidden />
+      </span>
+    </Tip>
+  );
+}
 
 const PART: Record<string, string> = {
   identity: "Identity",
@@ -48,12 +61,24 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
 
   return (
     <div>
-      <header className="flex flex-wrap items-end justify-between gap-8 pb-12">
-        <ScoreChip userId={u.id} name={u.name} size="lg" link={false} />
-        <div className="flex flex-wrap gap-2">
-          {panOk(u.pan) ? <span className="chip-zinc">PAN on file</span> : null}
-          {gstinOk(u.gstin) ? <span className="chip-zinc">GSTIN on file</span> : null}
-        </div>
+      <div className="pb-8">
+        {me ? <BackLink href="/dashboard" label="Your deals" /> : <BackLink href="/" label="Home" />}
+      </div>
+      <header className="pb-12">
+        <ScoreChip
+          userId={u.id}
+          name={u.name}
+          size="lg"
+          link={false}
+          badges={
+            panOk(u.pan) || gstinOk(u.gstin) ? (
+              <>
+                {panOk(u.pan) ? <Verified label="PAN checked" icon={BadgeCheck} /> : null}
+                {gstinOk(u.gstin) ? <Verified label="GSTIN checked" icon={BadgeIndianRupee} /> : null}
+              </>
+            ) : null
+          }
+        />
       </header>
 
       <section className="hairline grid lg:grid-cols-2">
@@ -79,7 +104,10 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
         </div>
 
         <div className="border-t border-line py-10 lg:border-t-0 lg:border-l lg:pl-12">
-          <h2 className="text-xl font-semibold tracking-tight">Vouches</h2>
+          <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+            <HandHeart size={18} strokeWidth={1.75} aria-hidden className="text-emerald-700" />
+            Vouches
+          </h2>
           {t.vouchers.length === 0 ? <p className="mt-4 text-sm text-muted">None yet.</p> : null}
           {t.vouchers.length ? <ul className="mt-6">
             {t.vouchers.map((v) => (
@@ -103,7 +131,7 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
                 <input className="input" name="note" placeholder="How do you know their work?" required />
               </label>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                <SubmitButton className="btn-ink" busy="Vouching…">Vouch with my score</SubmitButton>
+                <SubmitButton className="btn-ink" busy="Vouching…"><HandHeart size={16} strokeWidth={1.75} aria-hidden />Vouch with my score</SubmitButton>
                 <p className="text-xs text-muted">If they miss a deadline after this, you lose 150 points.</p>
               </div>
             </form>
@@ -120,14 +148,18 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
               <span className="text-xs text-muted tabular-nums">{day(e.created_at)}</span>
               <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
                 <span className="truncate text-ink">{e.title ?? (e.counterparty ? `Deal with ${firstName(e.counterparty)}` : "Deal")}</span>
-                {OUTCOME[e.type] ? <span className={OUTCOME[e.type][1]}>{OUTCOME[e.type][0]}</span> : null}
+                {OUTCOME[e.type] ? (() => {
+                  const [text, tone, Icon] = OUTCOME[e.type];
+                  return <span className={tone}><Icon size={12} strokeWidth={2} aria-hidden />{text}</span>;
+                })() : null}
               </span>
               <span className="font-medium tabular-nums">₹{(e.amount / 100).toLocaleString("en-IN")}</span>
             </StaggerItem>
           ))}
         </Stagger>
-        <a href={`/api/trust/${u.id}`} target="_blank" rel="noopener noreferrer" className="mt-10 inline-block text-xs text-muted underline decoration-line-strong underline-offset-4 hover:text-ink">
+        <a href={`/api/trust/${u.id}`} target="_blank" rel="noopener noreferrer" className="mt-10 inline-flex items-center gap-1.5 text-xs text-muted underline decoration-line-strong underline-offset-4 hover:text-ink">
           This score as JSON
+          <ExternalLink size={12} strokeWidth={1.75} aria-hidden />
         </a>
       </section>
     </div>

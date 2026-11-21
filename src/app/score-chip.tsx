@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { trustScore } from "@/lib/score";
 import { SpringNumber } from "@/components/motion";
 import { firstName } from "./format";
@@ -23,8 +24,8 @@ export function StableNumber({ from, to, className = "", duration = 0.6 }: { fro
   );
 }
 
-export function ScoreChip({ userId, name, role, size = "md", link = true }: {
-  userId: string; name: string; role?: string; size?: "md" | "lg"; link?: boolean;
+export function ScoreChip({ userId, name, role, size = "md", link = true, badges }: {
+  userId: string; name: string; role?: string; size?: "md" | "lg"; link?: boolean; badges?: ReactNode;
 }) {
   const t = trustScore(userId);
   const lg = size === "lg";
@@ -42,9 +43,12 @@ export function ScoreChip({ userId, name, role, size = "md", link = true }: {
           {role ?? "Pakka score"}
           <span className={TONE[t.band]}><span className="dot" />{t.band}</span>
         </span>
-        <Name className={`font-semibold text-ink underline decoration-transparent underline-offset-4 transition-colors group-hover:decoration-emerald-600 ${lg ? "text-xl" : "text-base"}`}>
-          {firstName(name)}
-        </Name>
+        <span className="flex items-center gap-1.5">
+          <Name className={`font-semibold text-ink underline decoration-transparent underline-offset-4 transition-colors group-hover:decoration-emerald-600 ${lg ? "text-xl" : "text-base"}`}>
+            {firstName(name)}
+          </Name>
+          {badges}
+        </span>
         <span className="text-xs text-muted tabular-nums">
           {t.stats.delivered} done · {t.stats.ghosted} ghosted · {t.vouchers.length} vouch{t.vouchers.length === 1 ? "" : "es"}
         </span>
