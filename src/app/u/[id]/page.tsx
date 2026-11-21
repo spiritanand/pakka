@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { db, getUser, type EventRow } from "@/lib/db";
@@ -69,7 +70,7 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
             {t.vouchers.map((v) => (
               <li key={v.voucher_id} className="border-t border-line py-3 text-sm">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <a href={`/u/${v.voucher_id}`} className="link font-medium">{v.voucher_name}</a>
+                  <Link href={`/u/${v.voucher_id}`} className="link font-medium">{v.voucher_name}</Link>
                   <span className="text-xs text-muted tabular-nums">score {v.voucher_score} · adds <span className="font-medium text-emerald-700">+{v.weight}</span></span>
                 </div>
                 {v.note ? <p className="mt-1 text-ink-2">“{v.note}”</p> : null}

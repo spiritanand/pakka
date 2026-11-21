@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import { currentUser } from "@/lib/auth";
+import { MotionProvider } from "@/components/motion";
 import { signOut } from "./actions";
 import "./globals.css";
 
@@ -18,6 +19,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${plexSans.variable} ${plexMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">
+        <MotionProvider>
         <header className="sticky top-0 z-30 border-b border-line bg-paper/85 backdrop-blur-md">
           <div className="rails flex h-16 items-center justify-between gap-4">
             <Link href="/" aria-label="Pakka home" className="flex items-center text-ink">
@@ -28,7 +30,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             </Link>
             {u ? (
               <nav className="flex items-center gap-1 text-sm sm:gap-2">
-                <Link href="/dashboard" className="rounded-md px-2.5 py-1.5 text-ink-2 transition-colors hover:bg-wash hover:text-ink">
+                <Link href="/dashboard" prefetch={true} className="rounded-md px-2.5 py-1.5 text-ink-2 transition-colors hover:bg-wash hover:text-ink">
                   Dashboard
                 </Link>
                 <Link
@@ -61,6 +63,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             <span>Your score leaves with your PAN.</span>
           </div>
         </footer>
+        </MotionProvider>
       </body>
     </html>
   );

@@ -12,7 +12,7 @@ export function ScoreChip({ userId, name, role, size = "md" }: { userId: string;
   const t = trustScore(userId);
   const lg = size === "lg";
   return (
-    <Link href={`/u/${userId}`} className="group inline-flex items-center gap-5 rounded-md">
+    <Link href={`/u/${userId}`} prefetch={true} className="group inline-flex items-center gap-5 rounded-md">
       <span className="flex items-baseline gap-1">
         <span className={`font-semibold tracking-[-0.04em] text-ink tabular-nums ${lg ? "text-6xl sm:text-7xl" : "text-5xl"}`}>{t.score}</span>
         <span className="text-xs text-faint tabular-nums">/1000</span>

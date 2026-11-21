@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { currentUser } from "@/lib/auth";
 import { db, getUser, type EventRow, type Milestone } from "@/lib/db";
@@ -5,7 +6,7 @@ import { getDealBySlug, getMilestones, scoreChanges } from "@/lib/deals";
 import { ScoreChip } from "../../score-chip";
 import { accept, fastForward, fund, reject, submit } from "../../actions";
 import { CopyLink } from "./copy-link";
-import { CountTo } from "./score-delta";
+import { SpringNumber } from "@/components/motion";
 
 const inr = (paise: number) => "₹" + (paise / 100).toLocaleString("en-IN");
 const when = (t: number) => new Date(t).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -210,7 +211,7 @@ function MilestoneSection({ m, slug, isFreelancer, isClient, signedIn }: {
               <button className="btn h-11 px-5">Fund {inr(m.amount)} · held until delivered</button>
             </form>
           ) : null}
-          {needsSignIn ? <a href={`/login?next=/d/${slug}`} className="btn h-11 px-5">Sign in to fund</a> : null}
+          {needsSignIn ? <Link href={`/login?next=/d/${slug}`} className="btn h-11 px-5">Sign in to fund</Link> : null}
 
           {canSubmit ? (
             <form action={submit} className="w-full max-w-2xl space-y-4">
@@ -287,13 +288,13 @@ function ScoreChanges({ milestoneId }: { milestoneId: string }) {
           const d = c.after - c.before;
           return (
             <li key={c.id} className="bg-wash px-(--rail-pad) py-8 sm:last:odd:col-span-2">
-              <a href={`/u/${c.user_id}`} className="link font-semibold">{c.name}</a>
+              <Link href={`/u/${c.user_id}`} prefetch={true} className="link font-semibold">{c.name}</Link>
               <p className="mt-1 text-sm text-muted">{c.reason}</p>
               <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-2">
                 <span className="text-2xl font-medium text-faint tabular-nums">{c.before}</span>
                 <span aria-hidden className="text-faint">→</span>
                 <span className={`text-5xl font-semibold tracking-[-0.04em] ${up ? "text-emerald-700" : "text-rose-700"}`}>
-                  <CountTo from={c.before} to={c.after} />
+                  <SpringNumber from={c.before} to={c.after} />
                 </span>
                 <span className={up ? "chip-emerald" : "chip-rose"}>{up ? "▲ +" : "▼ "}{d}</span>
               </div>

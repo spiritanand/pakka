@@ -57,6 +57,7 @@ function DealList({ title, deals, role, empty }: { title: string; deals: Deal[];
             <li key={d.id} className="border-b border-line">
               <Link
                 href={`/d/${d.slug}`}
+                prefetch={true}
                 className="group -mx-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-1 rounded-sm px-3 py-4 transition-colors hover:bg-wash"
               >
                 <span className="font-medium text-ink">{d.title}</span>
