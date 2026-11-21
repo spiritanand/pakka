@@ -117,9 +117,11 @@ export default async function Dashboard() {
         </section>
       ) : null}
 
-      <div className="flex justify-end">
-        <SeedButton />
-      </div>
+      {demoViewer ? (
+        <div className="flex justify-end">
+          <SeedButton />
+        </div>
+      ) : null}
     </div>
   );
 }
