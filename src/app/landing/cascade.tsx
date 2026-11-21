@@ -4,16 +4,15 @@ import { motion } from "motion/react";
 import { SpringNumber, spring } from "@/components/motion";
 
 const ROWS = [
-  { name: "Rohan", why: "Missed a funded deadline", from: 323, to: 23 },
+  { name: "Rohan", why: "Missed the deadline", from: 323, to: 23 },
   { name: "Priya", why: "Vouched for Rohan", from: 695, to: 545 },
-  { name: "Arjun", why: "Vouched for by Priya", from: 554, to: 539 },
 ];
 
 const viewport = { once: true, amount: 0.6 };
 
 export function Cascade() {
   return (
-    <ul className="mt-4 divide-y divide-line border-y border-line">
+    <ul className="divide-y divide-line border-y border-line">
       {ROWS.map((c, i) => {
         const delay = 0.2 + i * 0.14;
         return (

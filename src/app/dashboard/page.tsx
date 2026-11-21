@@ -5,8 +5,7 @@ import { db, type Deal } from "@/lib/db";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { ScoreChip } from "../score-chip";
 import { SeedButton } from "../seed-button";
-
-const inr = (paise: number) => "₹" + (paise / 100).toLocaleString("en-IN");
+import { firstName, inr } from "../format";
 
 const SHORT: Record<string, string> = {
   AGREED: "not funded",
@@ -55,42 +54,43 @@ export default async function Dashboard() {
        where d.client_id is null and d.freelancer_id != ? group by d.id order by d.created_at desc limit 5`,
     )
     .all(u.id) as Row[];
+  const waiting = !deals.length && open.length > 0;
 
   return (
     <div>
       <header className="flex flex-wrap items-end justify-between gap-8 pb-12">
         <ScoreChip userId={u.id} name={u.name} role="Your score" size="lg" />
-        <Link href="/new" className="btn">New deal</Link>
+        <Link href="/new" className={waiting ? "btn-ghost" : "btn"}>New deal</Link>
       </header>
 
-      <section className="section">
-        <ListHead title="Your deals" count={deals.length} />
-        {deals.length ? (
-          <DealList deals={deals} role={(d) => (d.freelancer_id === u.id ? "You're the freelancer" : "You're the client")} />
-        ) : open.length ? (
-          <p className="mt-4 text-sm text-muted">No deals yet. Open a link below to fund one, or start a new deal.</p>
-        ) : (
-          <p className="mt-6 max-w-md border-y border-line py-8 text-ink-2">
-            No deals yet. Create one and send the link to your client on WhatsApp.
-          </p>
-        )}
-      </section>
+      {waiting ? null : (
+        <section className="section">
+          <ListHead title="Your deals" count={deals.length} />
+          {deals.length ? (
+            <DealList deals={deals} role={(d) => (d.freelancer_id === u.id ? "You're the freelancer" : "You're the client")} />
+          ) : (
+            <p className="mt-6 max-w-md border-y border-line py-8 text-ink-2">
+              No deals yet. Create one and send the link to your client on WhatsApp.
+            </p>
+          )}
+        </section>
+      )}
 
       {open.length ? (
         <section className="section">
-          <ListHead title="Open links" count={open.length} tag="demo" />
+          <ListHead title={waiting ? "Waiting for you" : "Open links"} count={open.length} tag={waiting ? undefined : "demo"} />
           <DealList
             deals={open}
             role={() => "Open to fund"}
             meta={(d) => {
               const n = d.states.split(",").length;
-              return `from ${(d.freelancer_name ?? "").split(/[ (]/)[0]} · ${n} milestone${n === 1 ? "" : "s"}`;
+              return `from ${firstName(d.freelancer_name ?? "")} · ${n} milestone${n === 1 ? "" : "s"}`;
             }}
           />
         </section>
       ) : null}
 
-      <div className="flex justify-end pt-10">
+      <div className="flex justify-end pt-6">
         <SeedButton />
       </div>
     </div>

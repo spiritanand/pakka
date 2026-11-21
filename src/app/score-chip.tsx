@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { trustScore } from "@/lib/score";
 import { SpringNumber } from "@/components/motion";
+import { firstName } from "./format";
 
 const TONE: Record<string, string> = {
   Trusted: "chip-emerald",
@@ -36,7 +37,7 @@ export function ScoreChip({ userId, name, role, size = "md" }: { userId: string;
           <span className={TONE[t.band]}><span className="dot" />{t.band}</span>
         </span>
         <span className={`font-semibold text-ink underline decoration-transparent underline-offset-4 transition-colors group-hover:decoration-emerald-600 ${lg ? "text-xl" : "text-base"}`}>
-          {name}
+          {firstName(name)}
         </span>
         <span className="text-xs text-muted tabular-nums">
           {t.stats.delivered} done · {t.stats.ghosted} ghosted · {t.vouchers.length} vouch{t.vouchers.length === 1 ? "" : "es"}

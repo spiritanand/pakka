@@ -7,16 +7,9 @@ const bleed = "-mx-(--rail-pad)";
 const cell = "px-(--rail-pad)";
 
 const STEPS = [
-  { title: "Agree what done means", body: "A price, a deadline and a short checklist." },
-  { title: "Your client pays up front", body: "Razorpay holds the money. Then you start." },
-  { title: "Deliver and get paid", body: "They accept, or tick what's missing. No reply in 72 hours? You're paid." },
-];
-
-const BANDS = [
-  { name: "New", range: "0–299", span: 30, tone: "bg-zinc-300" },
-  { name: "Building", range: "300–599", span: 30, tone: "bg-amber-400" },
-  { name: "Reliable", range: "600–799", span: 20, tone: "bg-lime-500" },
-  { name: "Trusted", range: "800+", span: 20, tone: "bg-emerald-600" },
+  { title: "Agree what done means", body: "A price, a deadline, a short checklist." },
+  { title: "Your client pays up front", body: "Razorpay holds the money while you work." },
+  { title: "Deliver and get paid", body: "No reply in 72 hours? You're paid anyway." },
 ];
 
 function SectionHead({ title, lede }: { title: string; lede?: string }) {
@@ -65,7 +58,7 @@ export default function Landing() {
           <div className="mt-10">
             <Ctas />
           </div>
-          <p className="mt-6 text-[13px] text-faint">Miss the deadline and they get a full refund.</p>
+          <p className="mt-6 text-[13px] text-muted">Free to try. Your client doesn&apos;t need an account to look.</p>
         </div>
         <div
           className={`${cell} relative flex items-center justify-center border-t border-line bg-wash py-14 sm:py-20 lg:border-t-0 lg:border-l`}
@@ -81,12 +74,12 @@ export default function Landing() {
       </section>
 
       <section className="section">
-        <SectionHead title="How it works" lede="Someone always has to go first. Now it's Razorpay." />
+        <SectionHead title="How it works" />
         <Stagger
           as="ol"
           inView
           gap={0.08}
-          className="hairline mt-12 -mb-10 grid divide-y divide-line px-0 sm:-mb-14 sm:grid-cols-3 sm:divide-x sm:divide-y-0"
+          className="hairline mt-10 -mb-10 grid divide-y divide-line px-0 sm:-mb-14 sm:grid-cols-3 sm:divide-x sm:divide-y-0"
         >
           {STEPS.map((s, i) => (
             <StaggerItem as="li" key={s.title} className={`${cell} py-8 sm:py-10`}>
@@ -101,45 +94,21 @@ export default function Landing() {
       </section>
 
       <section className="section">
-        <SectionHead
-          title="A score built from real payments"
-          lede="Finish deals and it goes up. Miss a funded deadline and it drops 300."
-        />
-
-        <Reveal className="mt-12 max-w-2xl">
-          <div className="flex h-2 overflow-hidden rounded-full">
-            {BANDS.map((b) => (
-              <div
-                key={b.name}
-                className={`${b.tone} border-r-2 border-paper last:border-r-0`}
-                style={{ width: `${b.span}%` }}
-              />
-            ))}
-          </div>
-          <div className="mt-3 flex">
-            {BANDS.map((b) => (
-              <div key={b.name} style={{ width: `${b.span}%` }} className="pr-2">
-                <div className="text-sm font-medium text-ink">{b.name}</div>
-                <div className="text-xs tabular-nums text-muted">{b.range}</div>
-              </div>
-            ))}
-          </div>
-        </Reveal>
-
-        <Reveal className="mt-14 max-w-2xl">
-          <h3 className="text-lg font-semibold tracking-tight text-ink">One missed deadline, three scores</h3>
-          <p className="mt-1 text-sm text-pretty text-muted">
-            Rohan misses a deadline. Priya vouched for him, so she drops too.
-          </p>
-          <Cascade />
-        </Reveal>
-
-        <Reveal className="mt-8 flex max-w-2xl flex-wrap items-baseline gap-x-2 gap-y-1 text-sm text-muted">
-          Anyone can check a score:
-          <a href="/api/trust/CHVPP4321L" className="link font-mono text-[13px] break-all">
-            pakka.zwala.dev/api/trust/CHVPP4321L
-          </a>
-        </Reveal>
+        <div className="grid gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-start lg:gap-16">
+          <SectionHead
+            title="A score built from real payments"
+            lede="Finish deals and it goes up. Miss a deadline and it drops 300. So does anyone who vouched for you, by 150."
+          />
+          <Reveal className="lg:row-span-2">
+            <Cascade />
+          </Reveal>
+          <Reveal className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm text-muted lg:-mt-2">
+            Anyone can check a score:
+            <a href="/api/trust/CHVPP4321L" className="link font-mono text-[13px] break-all">
+              pakka.zwala.dev/api/trust/CHVPP4321L
+            </a>
+          </Reveal>
+        </div>
       </section>
 
       <section className="hairline bg-brand-soft/60 py-20 sm:py-28">

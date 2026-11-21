@@ -6,6 +6,7 @@ import { panOk, gstinOk, trustScore } from "@/lib/score";
 import { vouch } from "../../actions";
 import { ScoreChip } from "../../score-chip";
 import { Stagger, StaggerItem } from "@/components/motion";
+import { day, firstName } from "../../format";
 
 const OUTCOME: Record<string, [string, string]> = {
   DELIVERED: ["Paid", "chip-emerald"],
@@ -72,18 +73,18 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
             </StaggerItem>
           </Stagger>
           <p className="mt-4 max-w-prose text-xs leading-relaxed text-muted">
-            Only paid deals count. Missing a funded deadline costs 300.
+            Only paid deals count. A missed deadline costs 300.
           </p>
         </div>
 
         <div className="border-t border-line py-10 lg:border-t-0 lg:border-l lg:pl-12">
-          <h2 className="text-xl font-semibold tracking-tight">Vouched for by</h2>
-          {t.vouchers.length === 0 && !canVouch ? <p className="mt-4 text-sm text-muted">No vouches yet.</p> : null}
+          <h2 className="text-xl font-semibold tracking-tight">Vouches</h2>
+          {t.vouchers.length === 0 ? <p className="mt-4 text-sm text-muted">None yet.</p> : null}
           {t.vouchers.length ? <ul className="mt-6">
             {t.vouchers.map((v) => (
               <li key={v.voucher_id} className="border-t border-line py-3 text-sm">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <Link href={`/u/${v.voucher_id}`} className="link font-medium">{v.voucher_name}</Link>
+                  <Link href={`/u/${v.voucher_id}`} className="link font-medium">{firstName(v.voucher_name)}</Link>
                   <span className="text-xs text-muted tabular-nums">score {v.voucher_score} · adds <span className="font-medium text-emerald-700">+{v.weight}</span></span>
                 </div>
                 {v.note ? <p className="mt-1 text-ink-2">“{v.note}”</p> : null}
@@ -91,18 +92,18 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
             ))}
           </ul> : null}
           {given.length ? (
-            <p className="mt-4 text-sm text-muted">Vouches for: <span className="text-ink-2">{given.map((g) => g.name).join(", ")}</span></p>
+            <p className="mt-4 text-sm text-muted">Vouches for: <span className="text-ink-2">{given.map((g) => firstName(g.name)).join(", ")}</span></p>
           ) : null}
           {canVouch ? (
-            <form action={vouch} className={t.vouchers.length ? "mt-8 border-t border-line pt-6" : "mt-6"}>
+            <form action={vouch} className={t.vouchers.length ? "mt-8 border-t border-line pt-6" : "mt-4"}>
               <input type="hidden" name="vouchee" value={u.id} />
               <label className="block space-y-1.5">
-                <span className="block font-semibold text-ink">Vouch for {u.name}</span>
+                <span className="block font-semibold text-ink">Vouch for {firstName(u.name)}</span>
                 <input className="input" name="note" placeholder="How do you know their work?" required />
               </label>
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
                 <button className="btn-ink">Vouch with my score</button>
-                <p className="text-xs text-muted">If they miss a funded deadline after this, you lose 150 points.</p>
+                <p className="text-xs text-muted">If they miss a deadline after this, you lose 150 points.</p>
               </div>
             </form>
           ) : null}
@@ -110,25 +111,23 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
       </section>
 
       <section className="section">
-        <div className="flex flex-wrap items-baseline justify-between gap-4">
-          <h2 className="text-xl font-semibold tracking-tight">Recent outcomes</h2>
-          <a href={`/api/trust/${u.id}`} className="font-mono text-xs text-muted underline decoration-line-strong underline-offset-4 hover:text-ink">
-            GET /api/trust/{u.id}
-          </a>
-        </div>
+        <h2 className="text-xl font-semibold tracking-tight">Recent outcomes</h2>
         {events.length === 0 ? <p className="mt-4 text-sm text-muted">No finished deals yet.</p> : null}
         <Stagger as="ul" inView className="mt-6">
           {events.map((e) => (
             <StaggerItem as="li" key={e.id} className="grid grid-cols-[4rem_1fr_auto] items-baseline gap-4 border-t border-line py-3 text-sm">
-              <span className="text-xs text-faint tabular-nums">{new Date(e.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
+              <span className="text-xs text-faint tabular-nums">{day(e.created_at)}</span>
               <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
-                <span className="truncate text-ink">{e.title ?? (e.counterparty ? `Deal with ${e.counterparty.split(/[ (]/)[0]}` : "Deal")}</span>
+                <span className="truncate text-ink">{e.title ?? (e.counterparty ? `Deal with ${firstName(e.counterparty)}` : "Deal")}</span>
                 {OUTCOME[e.type] ? <span className={OUTCOME[e.type][1]}>{OUTCOME[e.type][0]}</span> : null}
               </span>
               <span className="font-medium tabular-nums">₹{(e.amount / 100).toLocaleString("en-IN")}</span>
             </StaggerItem>
           ))}
         </Stagger>
+        <a href={`/api/trust/${u.id}`} className="mt-10 inline-block text-xs text-faint underline decoration-line-strong underline-offset-4 hover:text-ink">
+          This score as JSON
+        </a>
       </section>
     </div>
   );

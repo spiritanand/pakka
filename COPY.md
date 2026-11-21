@@ -14,15 +14,15 @@ Every user-facing string, by screen. `[LOCKED]` = used by the e2e test, keep exa
 |---|---|
 | Pakka link | protected deal, pay link |
 | held by Razorpay, on hold | escrow, secured, locked, guaranteed |
-| paid, paid out | disbursed ("released" only on buttons) |
-| missed the deadline (sentences), ghosted (labels) | defaulted |
+| paid, paid out | disbursed, released |
+| missed the deadline (sentences), ghosted (labels) | defaulted, funded deadline |
 | score, vouch | reputation, rating, endorsement |
 | 72 hours (sentences), 72h (chips) | three days |
 
 ## Landing page
 
 Sections: 1 Hero · 2 How it works · 3 Trust score (API line folded in) · 4 Final CTA.
-Cut: "Fair to both sides" (its lede now leads How it works, its refund fact sits in the hero microcopy), the dark API terminal, the floating Human/Machine toggle, "Same link, other itches", the "What moves it" rules table and the "Not a marketplace" section.
+Cut: "Fair to both sides", the How it works lede, the score band bar, the cascade heading/sub and its third row, the hero mock's score rows and deal id, the dark API terminal, the floating Human/Machine toggle, "Same link, other itches", the "What moves it" rules table and the "Not a marketplace" section.
 
 ### 1. Hero
 
@@ -32,40 +32,32 @@ Cut: "Fair to both sides" (its lede now leads How it works, its refund fact sits
 - Primary CTA: `Create a Pakka link` (goes to `/login?next=/new`)
 - Secondary CTA: `Try the demo` (goes to `/login`)
 - Everything on the left paints with the HTML. Only the deal mock springs in, with no delay.
-- Microcopy: `Miss the deadline and they get a full refund.`
+- Microcopy (text-muted): `Free to try. Your client doesn't need an account to look.`
 
 Deal mock:
 
 - aria-label `Example deal: ₹15,000 held by Razorpay` · title `Logo for Kettle & Co. café` · `Milestone 1 of 2` / `Brand identity drafts` · chip `Held by Razorpay` `[LOCKED]` · `₹15,000`
 - `Delivered means`: `3 logo directions, PNG + SVG` / `Colour palette with hex codes` / `Editable Figma source shared`
-- Note: `Due 28 Nov. If Meera says nothing for 72h after delivery, Rohan is paid.`
-- Scores: `Rohan` / `Designer` / 323 / `Building` · `Meera` / `Café owner` / 438 / `Building`
+- Note, last thing on the card: `Due 28 Nov. If Meera says nothing for 72h after delivery, Rohan is paid.`
+- Starts at opacity 0.6, y 8 so it reads on the first frame.
 
 ### 2. How it works
 
-- Headline: `How it works`
-- Lede: `Someone always has to go first. Now it's Razorpay.`
+- Headline only: `How it works` (no lede; the hero sub already explains it)
 
 | Step | Title | Body |
 |---|---|---|
-| 1 | `Agree what done means` | `A price, a deadline and a short checklist.` |
-| 2 | `Your client pays up front` | `Razorpay holds the money. Then you start.` |
-| 3 | `Deliver and get paid` | `They accept, or tick what's missing. No reply in 72 hours? You're paid.` |
+| 1 | `Agree what done means` | `A price, a deadline, a short checklist.` |
+| 2 | `Your client pays up front` | `Razorpay holds the money while you work.` |
+| 3 | `Deliver and get paid` | `No reply in 72 hours? You're paid anyway.` |
 
 ### 3. Trust score
 
 - Headline: `A score built from real payments`
-- Lede: `Finish deals and it goes up. Miss a funded deadline and it drops 300.`
-- Bands (bar capped at max-w-2xl, same width as the cascade): `New` 0–299 · `Building` 300–599 · `Reliable` 600–799 · `Trusted` 800+
-
-Cascade, full width at max-w-2xl, heading `One missed deadline, three scores`:
-
-- Sub: `Rohan misses a deadline. Priya vouched for him, so she drops too.`
-- Rows: `Rohan` / `Missed a funded deadline` / 323 to 23 (−300) · `Priya` / `Vouched for Rohan` / 695 to 545 (−150) · `Arjun` / `Vouched for by Priya` / 554 to 539 (−15)
-
-Closing line, one muted row:
-
-- `Anyone can check a score:` + mono link `pakka.zwala.dev/api/trust/CHVPP4321L` (goes to `/api/trust/CHVPP4321L`)
+- Lede: `Finish deals and it goes up. Miss a deadline and it drops 300. So does anyone who vouched for you, by 150.`
+- Layout: lg two columns. Left: headline, lede, API line. Right: cascade, no heading. Mobile: head, cascade, API line.
+- Cascade rows: `Rohan` / `Missed the deadline` / 323 to 23 (−300) · `Priya` / `Vouched for Rohan` / 695 to 545 (−150)
+- API line: `Anyone can check a score:` + mono link `pakka.zwala.dev/api/trust/CHVPP4321L` (goes to `/api/trust/CHVPP4321L`)
 
 ### 4. Final CTA
 
@@ -91,9 +83,10 @@ Closing line, one muted row:
 - Headline (text-3xl / sm:text-4xl): `The money waits until the work is done.`
 - Sub: `Your client pays up front. Razorpay holds it until you deliver.`
 
-Demo block, directly under the sub. Left column is vertically centred on the form at lg.
+Demo block, directly under the sub. Left column is top-aligned so nothing moves between tabs.
 
-- Heading: `Try the demo, one click:`
+- Heading: `Or try the demo`
+- Personas in a 2-column grid, full-width buttons
 - Buttons: `Meera · client` `[LOCKED]` · `Rohan · freelancer` `[LOCKED]` · `Priya · voucher` `[LOCKED]` · `Arjun · freelancer`
 - Reset, faint text link at the bottom of the left column: `Reset demo data` / busy `Resetting…`
 
@@ -101,7 +94,7 @@ Demo block, directly under the sub. Left column is vertically centred on the for
 
 - Tabs: `Create account` / `Sign in`
 - Heading: `Create your account`
-- Sub: `Add your PAN and your score starts 60 points higher. A GSTIN adds 40 more.`
+- Sub: `Takes a minute. PAN and GSTIN are optional and raise your starting score.`
 - Fields: `Name` · `Email` · `Phone` · `Password` (placeholder `6 characters or more`) · `PAN (optional)` · `GSTIN (optional)`. Other placeholders unchanged.
 - Button: `Create account`
 - Below: `Already have an account?` link `Sign in`
@@ -116,11 +109,11 @@ Demo block, directly under the sub. Left column is vertically centred on the for
 ## Dashboard
 
 - Score chip: `Your score`
-- Button: `New deal`
+- Button: `New deal` (emerald; ghost when the only thing to do is fund a waiting link)
 - List heading: `Your deals`
 - Empty: `No deals yet. Create one and send the link to your client on WhatsApp.`
-- Empty but open links exist: `No deals yet. Open a link below to fund one, or start a new deal.`
-- Open list, always below `Your deals`: `Open links` + chip `demo`, row chip `Open to fund`, row meta `from {first name} · {n} milestone(s)`
+- No deals but open links exist: `Your deals` is hidden; one section `Waiting for you`, row chip `Open to fund`, row meta `from {first name} · {n} milestone(s)`
+- Has deals and open links: `Open links` + chip `demo` below `Your deals`
 - Row role: `You're the freelancer` / `You're the client`
 - `Reset demo data` sits at the page bottom, right-aligned, as a faint text link
 
@@ -128,13 +121,13 @@ Demo block, directly under the sub. Left column is vertically centred on the for
 
 - No eyebrow
 - Headline: `New deal`
-- Sub: `Split the job into milestones and say what done means for each. You'll get a link to send your client.`
+- Sub: `Say what done means. Get a link to send your client.`
 - Project: heading `Project` · helper `Your client sees this at the top of the link.` · label `Project title` · placeholder `Shopify store for Meera's brand`
 - Milestones: `Milestone 1` / `Milestone 2 (optional)` · helper, milestone 1 only: `Each milestone is funded and paid separately.`
-- Labels: `Title` · `Amount (₹)` · `Due in days`
+- Labels: `Title` · `Amount (₹)` · `Due in days` (defaults 7 and 14)
 - Placeholders: title `Homepage + product pages` / `Checkout + launch` · amount `15000` · checklist `Homepage live on staging URL` + `3 product pages` / `Razorpay checkout working` + `Store live on custom domain`
-- Checklist label: `Delivered means (one item per line)`
-- Checklist helper, under milestone 1 only: `One checkable item per line. Your client sends work back by ticking what's missing.`
+- Checklist label: `Delivered means`
+- Checklist helper, under milestone 1 only: `One item per line. Your client ticks what's missing if they send it back.`
 - Milestone 2 has no wash background; `(optional)` is enough.
 - Footer note: `Your client pays nothing until they fund a milestone.`
 - Button: `Create Pakka link`
@@ -147,15 +140,15 @@ Demo block, directly under the sub. Left column is vertically centred on the for
 - Eyebrow: `Pakka deal`
 - Sub: `₹{total} across {n} milestone(s). Razorpay holds each one until it's delivered.`
 - Copy button: `Copy Pakka link` / after click `Copied. Paste it in WhatsApp.`
-- Score chips: `Freelancer` / `Client`. Freelancer's name links to `/u/<id>` `[LOCKED]`
-- No client yet: `Client` · `Joins when they fund the first milestone.`
+- Score chips: `Freelancer` / `Client`, names cut at the first ` (`. Freelancer's name links to `/u/<id>` `[LOCKED]`
+- No client yet, `Client` plus: client-to-be `That's you, once you fund milestone 1.` · freelancer `Your client joins when they fund milestone 1.` · signed out `Whoever funds milestone 1.`
 
 ### Milestone states
 
 | State | Chip | Note |
 |---|---|---|
-| AGREED, next to fund | `Not funded yet` | `Work starts once this says Held by Razorpay.` |
-| AGREED, later | `Not funded yet` | `Fund this when milestone {n} is done.` |
+| AGREED, next to fund | `Not funded yet` | client: `Razorpay holds your ₹{amount} until {freelancer} delivers. Miss the deadline and it comes back to you.` · freelancer: `Start once this says Held by Razorpay.` · others: `Work starts once this says Held by Razorpay.` |
+| AGREED, later | `Not funded yet` | `You can fund this later.` · freelancer: `Your client can fund this later.` |
 | FUNDING | `Confirming payment…` | |
 | FUNDED | `Held by Razorpay` `[LOCKED]` | `Razorpay is holding the money. Work can start.` |
 | FUNDED, sent back | `Held by Razorpay` `[LOCKED]` | `Sent back. Fix the items in red and deliver again within 48 hours.` |
@@ -175,7 +168,7 @@ Dropped the old 7-day 50/50 split promise; the code doesn't do it.
 - `Deadline`, date only: `26 Nov`
 - Review deadline: `Pays out automatically on`, with time: `23 Nov, 3:41 pm`
 - `Revision {n}`
-- References: `transfer {id}` / `refund {id}`
+- References (faint mono, 11px): `Razorpay ref {id}` / `Refund ref {id}`
 
 Outcomes (client / freelancer / others):
 
@@ -199,12 +192,12 @@ Freelancer, funded:
 
 Client, in review:
 
-- `Accept and release ₹{amount}`
-- Reject label: `Something missing? Tick it.`
+- `Accept and pay {freelancer} ₹{amount}`
+- Reject label: `Something missing? Send it back.`
 - Reject button: `Send back for fixes`
 - Helper: `The freelancer gets 48 hours to fix it. Sending it back twice marks it disputed.`
 
-Demo controls (no emoji):
+Demo controls (no emoji), own row at the end of the milestone, left-aligned:
 
 - `Demo: fast-forward past deadline` `[LOCKED: contains "past deadline"]`
 - `Demo: fast-forward 72h of client silence` `[LOCKED: contains "72h of client silence"]`
@@ -247,18 +240,18 @@ Demo controls (no emoji):
 - Chips, positives only: `PAN checked` · `GSTIN checked`
 - Heading: `Where the score comes from`
 - Rows, zero rows hidden: `Identity` · `Deals finished` · `On time` · `Missed deadlines` · `Lost through vouches` · `Vouches received` · total `Score`
-- Small print: `Only paid deals count. Missing a funded deadline costs 300.`
-- Heading: `Vouched for by`
-- Empty: `No vouches yet.` (only when the vouch form isn't shown)
+- Small print: `Only paid deals count. A missed deadline costs 300.`
+- Heading: `Vouches`
+- Empty: `None yet.` (muted, above the form)
 - Row: `score {n} · adds +{weight}` and the note in quotes
 - `Vouches for: {names}`
-- Vouch label: `Vouch for {name}`
+- Vouch label: `Vouch for {first name}`
 - Placeholder: `How do you know their work?` `[LOCKED]`
 - Button: `Vouch with my score` `[LOCKED: contains "Vouch"]`
-- Helper: `If they miss a funded deadline after this, you lose 150 points.`
+- Helper: `If they miss a deadline after this, you lose 150 points.`
 - Heading: `Recent outcomes`
-- API link: `GET /api/trust/{id}`
-- Outcome dates: `2 Sep` (same day-month format as the deal room)
+- API link, faint, at the page bottom: `This score as JSON`
+- Outcome dates: `2 Sep` (fixed 3-letter months, shared with the deal room)
 - Empty: `No finished deals yet.`
 - Rows: deal title + outcome chip:
   - DELIVERED: `Paid` (emerald)

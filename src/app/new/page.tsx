@@ -9,7 +9,7 @@ export default async function NewDeal() {
       <header className="max-w-2xl pb-12">
         <h1 className="text-4xl font-semibold tracking-[-0.03em] sm:text-5xl">New deal</h1>
         <p className="mt-4 text-lg leading-relaxed text-ink-2">
-          Split the job into milestones and say what done means for each. You'll get a link to send your client.
+          Say what done means. Get a link to send your client.
         </p>
       </header>
 
@@ -46,11 +46,11 @@ export default async function NewDeal() {
               </label>
               <label className="block space-y-1.5">
                 <span className="label block">Due in days</span>
-                <input className="input tabular-nums" name="m_due" type="number" min="1" placeholder="Due in days" defaultValue={7} />
+                <input className="input tabular-nums" name="m_due" type="number" min="1" placeholder="Due in days" defaultValue={i ? 14 : 7} />
               </label>
             </div>
             <label className="block space-y-1.5">
-              <span className="label block">Delivered means (one item per line)</span>
+              <span className="label block">Delivered means</span>
               <textarea
                 className="input min-h-28 leading-relaxed"
                 name="m_checklist"
@@ -59,7 +59,7 @@ export default async function NewDeal() {
               />
               {i ? null : (
                 <span className="block text-xs text-muted">
-                  One checkable item per line. Your client sends work back by ticking what's missing.
+                  One item per line. Your client ticks what's missing if they send it back.
                 </span>
               )}
             </label>

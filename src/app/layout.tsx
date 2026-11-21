@@ -5,6 +5,7 @@ import { currentUser } from "@/lib/auth";
 import { MotionProvider } from "@/components/motion";
 import { signOut } from "./actions";
 import { MarkdownLink } from "./markdown-link";
+import { firstName } from "./format";
 import "./globals.css";
 
 const plexSans = IBM_Plex_Sans({ variable: "--font-plex-sans", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
@@ -38,7 +39,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                   href={`/u/${u.id}`}
                   className="hidden max-w-[12rem] truncate rounded-md px-2.5 py-1.5 text-ink-2 transition-colors hover:bg-wash hover:text-ink sm:block"
                 >
-                  {u.name.split(" (")[0]}
+                  {firstName(u.name)}
                 </Link>
                 <form action={signOut}>
                   <button className="btn-ghost btn-sm">Sign out</button>

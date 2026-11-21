@@ -42,10 +42,10 @@ Built only from money-verified outcomes.
 | Trusted | 800+ |
 
 - Delivered and paid milestones raise it (at most 3 deals with the same counterparty count).
-- Missing a funded deadline costs 300.
+- Missing a deadline costs 300.
 - A client who lets a payment auto-release by staying silent loses 40.
 - Vouches add up to 200, weighted by the voucher's own score.
-- Vouching has a cost: if someone you vouched for misses a funded deadline, you lose 150.
+- Vouching has a cost: if someone you vouched for misses a deadline, you lose 150.
 
 ## Trust API
 

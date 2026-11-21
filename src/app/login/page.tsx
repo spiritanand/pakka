@@ -20,7 +20,7 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
   if (await currentUser()) redirect(next);
   return (
     <div className="grid gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-0">
-      <section className="lg:self-center lg:pr-14">
+      <section className="lg:pt-2 lg:pr-14">
         <h1 className="text-3xl font-semibold tracking-[-0.03em] text-balance text-ink sm:text-4xl">
           The money waits until the work is done.
         </h1>
@@ -28,14 +28,14 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
           Your client pays up front. Razorpay holds it until you deliver.
         </p>
         <div className="mt-8">
-          <h2 className="text-sm font-semibold text-ink">Try the demo, one click:</h2>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <h2 className="text-sm font-semibold text-ink">Or try the demo</h2>
+          <div className="mt-4 grid max-w-sm grid-cols-2 gap-2">
             {PERSONAS.map(([k, label]) => (
               <form key={k} action={signIn}>
                 <input type="hidden" name="email" value={`${k}@pakka.demo`} />
                 <input type="hidden" name="password" value="pakka1234" />
                 <input type="hidden" name="next" value={next} />
-                <button className="btn-ghost">{label}</button>
+                <button className="btn-ghost w-full">{label}</button>
               </form>
             ))}
           </div>
@@ -69,7 +69,7 @@ export default async function Login({ searchParams }: PageProps<"/login">) {
               <input type="hidden" name="next" value={next} />
               <div>
                 <h2 className="text-2xl font-semibold tracking-tight">Create your account</h2>
-                <p className="mt-1.5 text-sm text-muted">Add your PAN and your score starts 60 points higher. A GSTIN adds 40 more.</p>
+                <p className="mt-1.5 text-sm text-muted">Takes a minute. PAN and GSTIN are optional and raise your starting score.</p>
               </div>
               <Field label="Name"><input className="input" name="name" placeholder="Your name" autoComplete="name" required autoFocus /></Field>
               <div className="grid gap-4 sm:grid-cols-2">

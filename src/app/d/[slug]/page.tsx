@@ -8,11 +8,7 @@ import { accept, fastForward, fund, reject, submit } from "../../actions";
 import { CopyLink } from "./copy-link";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { Disclosure, StatusChip } from "./deal-motion";
-
-const inr = (paise: number) => "₹" + (paise / 100).toLocaleString("en-IN");
-const day = (t: number) => new Date(t).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-const when = (t: number) => new Date(t).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
-const first = (name: string) => name.split(/[ (]/)[0];
+import { day, firstName as first, inr, when } from "../../format";
 
 type Viewer = "client" | "freelancer" | "other";
 type Names = { freelancer: string; client: string };
@@ -27,6 +23,12 @@ const STATE: Record<string, { label: string; tone: string; note: string }> = {
   REFUNDING: { label: "Refunding…", tone: "chip-rose", note: "" },
   REFUNDED: { label: "Refunded to client", tone: "chip-rose", note: "" },
   DISPUTED: { label: "Disputed", tone: "chip-rose", note: "Sent back twice. Razorpay keeps holding the money." },
+};
+
+const AGREED_NOTE: Record<Viewer, (n: Names, amount: number) => string> = {
+  client: (n, a) => `Razorpay holds your ${inr(a)} until ${n.freelancer} delivers. Miss the deadline and it comes back to you.`,
+  freelancer: () => "Start once this says Held by Razorpay.",
+  other: () => STATE.AGREED.note,
 };
 
 const SENT_BACK = "Sent back. Fix the items in red and deliver again within 48 hours.";
@@ -118,7 +120,9 @@ export default async function DealPage({ params }: PageProps<"/d/[slug]">) {
           ) : (
             <div>
               <div className="text-[13px] text-muted">Client</div>
-              <p className="mt-1 text-ink-2">Joins when they fund the first milestone.</p>
+              <p className="mt-1 text-ink-2">
+                {isClient ? "That's you, once you fund milestone 1." : isFreelancer ? "Your client joins when they fund milestone 1." : "Whoever funds milestone 1."}
+              </p>
             </div>
           )}
         </div>
@@ -177,8 +181,12 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
     ? SENT_BACK
     : m.state === "SUBMITTED"
       ? REVIEW_NOTE[viewer](names)
-      : m.state === "AGREED" && !fundNext
-        ? `Fund this when milestone ${m.idx} is done.`
+      : m.state === "AGREED"
+        ? fundNext
+          ? AGREED_NOTE[viewer](names, m.amount)
+          : isFreelancer
+            ? "Your client can fund this later."
+            : "You can fund this later."
         : s.note;
   const fundClass = `${fundNext ? "btn" : "btn-ghost"} h-11 px-5`;
   const canFund = m.state === "AGREED" && isClient;
@@ -275,16 +283,18 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
           {note ? <p className={sentBack ? "text-rose-700" : "text-ink-2"}>{note}</p> : null}
           {m.outcome && OUTCOME[m.outcome] ? <p className="font-medium text-ink">{OUTCOME[m.outcome][viewer](names)}</p> : null}
           {m.transfer_id || m.refund_id ? (
-            <div className="space-y-0.5 font-mono text-xs text-faint">
-              {m.transfer_id ? <div>transfer {m.transfer_id}</div> : null}
-              {m.refund_id ? <div>refund {m.refund_id}</div> : null}
+            <div className="space-y-0.5 font-mono text-[11px] text-faint">
+              {m.transfer_id ? <div>Razorpay ref {m.transfer_id}</div> : null}
+              {m.refund_id ? <div>Refund ref {m.refund_id}</div> : null}
             </div>
           ) : null}
         </dl>
       </div>
 
       {canFund || needsSignIn || canReview || canForward ? (
-        <div className="mt-8 flex flex-wrap items-start gap-3 border-t border-line pt-6 sm:ml-10">
+        <div className="mt-8 border-t border-line pt-6 sm:ml-10">
+          {canFund || needsSignIn || canReview ? (
+        <div className="flex flex-wrap items-start gap-3">
           {canFund ? (
             <form action={fund}>
               <input type="hidden" name="m" value={m.id} />
@@ -298,9 +308,9 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
               <form action={accept}>
                 <input type="hidden" name="m" value={m.id} />
                 <input type="hidden" name="slug" value={slug} />
-                <button className="btn h-11 px-5">Accept and release {inr(m.amount)}</button>
+                <button className="btn h-11 px-5">Accept and pay {names.freelancer} {inr(m.amount)}</button>
               </form>
-              <Disclosure label="Something missing? Tick it.">
+              <Disclosure label="Something missing? Send it back.">
                 <form action={reject} className="space-y-4 text-sm">
                   <input type="hidden" name="m" value={m.id} />
                   <input type="hidden" name="slug" value={slug} />
@@ -319,9 +329,11 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
               </Disclosure>
             </div>
           ) : null}
+        </div>
+          ) : null}
 
           {canForward ? (
-            <form action={fastForward} className="ml-auto">
+            <form action={fastForward} className={canFund || needsSignIn || canReview ? "mt-6" : ""}>
               <input type="hidden" name="m" value={m.id} />
               <input type="hidden" name="slug" value={slug} />
               <button className="inline-flex h-8 items-center gap-1.5 rounded-md border border-dashed border-line-strong bg-paper px-3 text-xs text-muted transition-colors hover:border-ink/40 hover:text-ink">

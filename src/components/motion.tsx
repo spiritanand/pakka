@@ -40,7 +40,7 @@ export function Enter({ as = "div", delay = 0, y = 8, ...rest }: BaseProps) {
   return <M initial={{ opacity: 0, y }} animate={{ opacity: 1, y: 0 }} transition={{ ...spring.soft, delay }} {...rest} />;
 }
 
-export function Reveal({ as = "div", delay = 0, y = 14, amount = 0.25, ...rest }: BaseProps & { amount?: number }) {
+export function Reveal({ as = "div", delay = 0, y = 8, amount = 0.1, ...rest }: BaseProps & { amount?: number }) {
   const M = tagOf(as);
   return (
     <M
