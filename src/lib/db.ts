@@ -2,7 +2,7 @@ import Database from "better-sqlite3";
 
 const g = globalThis as unknown as { __pakkaDb?: Database.Database };
 
-export const db = g.__pakkaDb ?? new Database(process.env.DB_PATH ?? "pakka.db");
+export const db = g.__pakkaDb ?? new Database(process.env.DB_PATH ?? (process.env.VERCEL ? "/tmp/pakka.db" : "pakka.db"));
 g.__pakkaDb = db;
 db.pragma("journal_mode = WAL");
 

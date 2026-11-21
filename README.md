@@ -1,36 +1,29 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pakka
 
-## Getting Started
+Pay links that hold the money until the work lands.
 
-First, run the development server:
+A freelancer sends a Pakka link on WhatsApp. The client pays the full milestone up front, the money waits with Razorpay (a Route transfer on hold), and it moves when the work is delivered:
+
+- Client accepts → freelancer is paid.
+- Client stays silent for 72 hours after delivery → freelancer is paid.
+- Nothing delivered by the deadline → client is refunded in full.
+
+Every finished deal builds a 0–1000 trust score for both sides. Vouches carry weight, and a cost: if someone you vouched for misses a funded deadline, your score drops too.
+
+Built for the Razorpay Fix My Itch buildathon (Bengaluru, November 2026) on the itch *"Why do freelancers ghost projects after partial payments without accountability systems?"*. Runs on Razorpay test mode.
+
+## For agents
+
+- `GET /api/trust/{PAN or user id}` returns a score, its breakdown and vouches as JSON.
+- `/index.md` and `/llms.txt` describe the product; `curl -H "Accept: text/markdown" https://pakka.zwala.dev` returns markdown.
+
+## Run locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+cp .env.local.example .env.local   # Razorpay test keys, linked account id, auth secret
 pnpm dev
-# or
-bun dev
+curl -X POST -H 'x-seed: 1' localhost:3000/api/dev/seed   # demo data
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Stack: Next.js 16, React 19, Tailwind v4, motion, better-auth, SQLite (Turso for production), Razorpay Route.
