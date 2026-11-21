@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ArrowRight } from "lucide-react";
 import { currentUser } from "@/lib/auth";
 import { db, type Deal } from "@/lib/db";
 import { Stagger, StaggerItem } from "@/components/motion";
@@ -136,7 +137,7 @@ function DealList({ deals, role, meta }: { deals: Row[]; role: (d: Row) => strin
             </span>
             <span className="flex items-center gap-4">
               <span className="font-semibold text-ink tabular-nums">{inr(d.total)}</span>
-              <span aria-hidden className="text-faint transition-transform group-hover:translate-x-0.5 group-hover:text-emerald-700">→</span>
+              <ArrowRight size={16} strokeWidth={1.75} aria-hidden className="text-faint transition-colors group-hover:text-emerald-700" />
             </span>
           </Link>
         </StaggerItem>

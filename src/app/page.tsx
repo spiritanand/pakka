@@ -104,7 +104,7 @@ export default function Landing() {
           </Reveal>
           <Reveal className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm text-muted lg:-mt-2">
             Anyone can check a score:
-            <a href="/api/trust/CHVPP4321L" className="link font-mono text-[13px] break-all">
+            <a href="/api/trust/CHVPP4321L" target="_blank" rel="noopener noreferrer" className="link font-mono text-[13px] break-all">
               pakka.zwala.dev/api/trust/CHVPP4321L
             </a>
           </Reveal>

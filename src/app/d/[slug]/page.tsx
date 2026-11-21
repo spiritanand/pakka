@@ -5,7 +5,8 @@ import { db, getUser, type EventRow, type Milestone } from "@/lib/db";
 import { getDealBySlug, getMilestones, scoreChanges } from "@/lib/deals";
 import { ScoreChip, StableNumber } from "../../score-chip";
 import { accept, fastForward, fund, reject, submit } from "../../actions";
-import { CopyLink } from "./copy-link";
+import { ArrowDown, ArrowRight, ArrowUp, Check, X } from "lucide-react";
+import { CopyButton } from "@/components/copy-button";
 import { Stagger, StaggerItem } from "@/components/motion";
 import { Disclosure, StatusChip } from "./deal-motion";
 import { day, firstName as first, inr, when } from "../../format";
@@ -109,7 +110,7 @@ export default async function DealPage({ params, searchParams }: PageProps<"/d/[
             {milestones.length === 1 ? "" : "s"}. Razorpay holds each one until it's delivered.
           </p>
         </div>
-        <CopyLink />
+        <CopyButton value={`/d/${slug}`} href label="Copy Pakka link" copiedLabel="Copied. Paste it in WhatsApp." size="md" />
       </header>
 
       {fundingPending && nextToFund ? (
@@ -254,11 +255,11 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
                   <li key={i} className="flex items-start gap-3 border-b border-line py-2.5 text-sm">
                     <span
                       aria-hidden
-                      className={`mt-0.5 grid size-4 shrink-0 place-items-center rounded-xs border text-[10px] leading-none ${
+                      className={`mt-0.5 grid size-4 shrink-0 place-items-center rounded-xs border ${
                         bad ? "border-rose-300 bg-rose-50 text-rose-700" : ok ? "border-emerald-600 bg-emerald-600 text-white" : "border-line-strong"
                       }`}
                     >
-                      {bad ? "✗" : ok ? "✓" : ""}
+                      {bad ? <X size={12} strokeWidth={2.25} /> : ok ? <Check size={12} strokeWidth={2.25} /> : null}
                     </span>
                     <span className={bad ? "text-rose-700" : "text-ink"}>{c}</span>
                   </li>
@@ -266,7 +267,7 @@ function MilestoneSection({ m, slug, viewer, names, fundNext, signedIn }: {
               })}
             </ul>
             {m.evidence_url ? (
-              <a href={m.evidence_url} target="_blank" className="link mt-3 inline-block max-w-full truncate text-sm">
+              <a href={m.evidence_url} target="_blank" rel="noopener noreferrer" className="link mt-3 inline-block max-w-full truncate text-sm">
                 The work: {m.evidence_url}
               </a>
             ) : null}
@@ -374,13 +375,13 @@ function ScoreChanges({ milestoneId }: { milestoneId: string }) {
               <p className="mt-1 text-sm text-muted">{c.reason}</p>
               <div className="mt-5 flex flex-wrap items-baseline gap-x-3 gap-y-2">
                 <span className="text-2xl font-medium text-faint tabular-nums">{c.before}</span>
-                <span aria-hidden className="text-faint">→</span>
+                <ArrowRight size={16} strokeWidth={1.75} aria-hidden className="self-center text-faint" />
                 <StableNumber
                   from={c.before}
                   to={c.after}
                   className={`text-5xl font-semibold tracking-[-0.04em] ${up ? "text-emerald-700" : "text-rose-700"}`}
                 />
-                <span className={up ? "chip-emerald" : "chip-rose"}>{up ? "▲ +" : "▼ "}{d}</span>
+                <span className={up ? "chip-emerald" : "chip-rose"}>{up ? <ArrowUp size={12} strokeWidth={2} aria-hidden /> : <ArrowDown size={12} strokeWidth={2} aria-hidden />}{up ? "+" : ""}{d}</span>
               </div>
             </StaggerItem>
           );

@@ -126,7 +126,7 @@ export default async function Profile({ params }: PageProps<"/u/[id]">) {
             </StaggerItem>
           ))}
         </Stagger>
-        <a href={`/api/trust/${u.id}`} className="mt-10 inline-block text-xs text-muted underline decoration-line-strong underline-offset-4 hover:text-ink">
+        <a href={`/api/trust/${u.id}`} target="_blank" rel="noopener noreferrer" className="mt-10 inline-block text-xs text-muted underline decoration-line-strong underline-offset-4 hover:text-ink">
           This score as JSON
         </a>
       </section>

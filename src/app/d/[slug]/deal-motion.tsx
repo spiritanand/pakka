@@ -2,6 +2,7 @@
 
 import { useId, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
+import { ChevronRight } from "lucide-react";
 import { spring, useAnimateIn } from "@/components/motion";
 
 export function StatusChip({ state, tone, children }: { state: string; tone: string; children: ReactNode }) {
@@ -31,8 +32,8 @@ export function Disclosure({ label, children }: { label: string; children: React
         onClick={() => setOpen((o) => !o)}
         className="inline-flex items-center gap-2 text-sm font-medium text-ink-2 hover:text-ink"
       >
-        <motion.span aria-hidden className="inline-block text-faint" animate={{ rotate: open ? 90 : 0 }} transition={spring.snappy}>
-          ›
+        <motion.span aria-hidden className="inline-flex text-faint" animate={{ rotate: open ? 90 : 0 }} transition={spring.snappy}>
+          <ChevronRight size={16} strokeWidth={1.75} />
         </motion.span>
         {label}
       </button>

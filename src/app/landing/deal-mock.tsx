@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { Check as CheckIcon } from "lucide-react";
 import { spring } from "@/components/motion";
 
 const CHECKLIST = [
@@ -22,9 +23,7 @@ function Check({ done, delay }: { done: boolean; delay: number }) {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ ...spring.snappy, delay }}
       >
-        <svg viewBox="0 0 12 12" className="size-2.5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-          <path d="M2.5 6.2 5 8.5l4.5-5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <CheckIcon size={11} strokeWidth={2.5} aria-hidden />
       </motion.span>
     </span>
   );
